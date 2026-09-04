@@ -29,3 +29,5 @@ Backend integration tests live in `backend/tests/DlfVoting.Api.Tests` and run ag
 ```bash
 dotnet test backend/tests/DlfVoting.Api.Tests
 ```
+
+Working hours: 4h

@@ -42,11 +42,17 @@
     width: 100%;
     margin-top: 1.25rem;
     padding: 0.5rem;
-    border: 1px solid var(--border, #e5e4e7);
+    border: none;
     border-radius: 4px;
-    background-color: transparent;
+    background-color: var(--danger);
+    color: white;
     cursor: pointer;
     font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.sidebar-signout:hover {
+    background-color: var(--danger-hover);
 }
 
 .sidebar-nav {

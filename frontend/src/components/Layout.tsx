@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import dlfLogo from '../assets/dlf-logo.svg'
 import { useAuth } from '../context/AuthContext'
+import ConfirmDialog from './ConfirmDialog'
 import './Layout.css'
 
 const ADMIN_NAV_ITEMS = [
@@ -14,8 +16,10 @@ const ADMIN_NAV_ITEMS = [
 function Layout() {
     const { isAuthenticated, logout } = useAuth()
     const navigate = useNavigate()
+    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
 
-    const handleSignOut = async () => {
+    const handleConfirmSignOut = async () => {
+        setShowSignOutConfirm(false)
         await logout()
         navigate('/login/admin')
     }
@@ -30,7 +34,10 @@ function Layout() {
 
                 {isAuthenticated && (
                     <>
-                        <button className="sidebar-signout" onClick={handleSignOut}>
+                        <button
+                            className="sidebar-signout"
+                            onClick={() => setShowSignOutConfirm(true)}
+                        >
                             Sign out
                         </button>
 
@@ -52,6 +59,16 @@ function Layout() {
             <main className="app-content">
                 <Outlet />
             </main>
+
+            {showSignOutConfirm && (
+                <ConfirmDialog
+                    title="Sign out"
+                    message="Are you sure you want to sign out?"
+                    confirmLabel="Sign out"
+                    onConfirm={handleConfirmSignOut}
+                    onCancel={() => setShowSignOutConfirm(false)}
+                />
+            )}
         </div>
     )
 }
