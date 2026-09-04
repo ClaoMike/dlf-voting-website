@@ -1,0 +1,208 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0": {
+      "Microsoft.AspNetCore.OpenApi/9.0.9": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.OpenApi": "1.6.17"
+        },
+        "compile": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll": {
+            "related": ".xml"
+          }
+        },
+        "frameworkReferences": [
+          "Microsoft.AspNetCore.App"
+        ]
+      },
+      "Microsoft.OpenApi/1.6.17": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
+            "related": ".pdb;.xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.OpenApi.dll": {
+            "related": ".pdb;.xml"
+          }
+        }
+      },
+      "DlfVoting.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "DlfVoting.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/DlfVoting.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/DlfVoting.Application.dll": {}
+        }
+      },
+      "DlfVoting.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/DlfVoting.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/DlfVoting.Domain.dll": {}
+        }
+      },
+      "DlfVoting.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "DlfVoting.Application": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/DlfVoting.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/DlfVoting.Infrastructure.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.AspNetCore.OpenApi/9.0.9": {
+      "sha512": "3Sina0gS/CTYt9XG6DUFPdXOmJui7e551U0kO2bIiDk3vZ2sctxxenN+cE1a5CrUpjIVZfZr32neWYYRO+Piaw==",
+      "type": "package",
+      "path": "microsoft.aspnetcore.openapi/9.0.9",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.dll",
+        "lib/net9.0/Microsoft.AspNetCore.OpenApi.xml",
+        "microsoft.aspnetcore.openapi.9.0.9.nupkg.sha512",
+        "microsoft.aspnetcore.openapi.nuspec"
+      ]
+    },
+    "Microsoft.OpenApi/1.6.17": {
+      "sha512": "Le+kehlmrlQfuDFUt1zZ2dVwrhFQtKREdKBo+rexOwaCoYP0/qpgT9tLxCsZjsgR5Itk1UKPcbgO+FyaNid/bA==",
+      "type": "package",
+      "path": "microsoft.openapi/1.6.17",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/netstandard2.0/Microsoft.OpenApi.dll",
+        "lib/netstandard2.0/Microsoft.OpenApi.pdb",
+        "lib/netstandard2.0/Microsoft.OpenApi.xml",
+        "microsoft.openapi.1.6.17.nupkg.sha512",
+        "microsoft.openapi.nuspec"
+      ]
+    },
+    "DlfVoting.Application/1.0.0": {
+      "type": "project",
+      "path": "../DlfVoting.Application/DlfVoting.Application.csproj",
+      "msbuildProject": "../DlfVoting.Application/DlfVoting.Application.csproj"
+    },
+    "DlfVoting.Domain/1.0.0": {
+      "type": "project",
+      "path": "../DlfVoting.Domain/DlfVoting.Domain.csproj",
+      "msbuildProject": "../DlfVoting.Domain/DlfVoting.Domain.csproj"
+    },
+    "DlfVoting.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../DlfVoting.Infrastructure/DlfVoting.Infrastructure.csproj",
+      "msbuildProject": "../DlfVoting.Infrastructure/DlfVoting.Infrastructure.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0": [
+      "DlfVoting.Application >= 1.0.0",
+      "DlfVoting.Infrastructure >= 1.0.0",
+      "Microsoft.AspNetCore.OpenApi >= 9.0.9"
+    ]
+  },
+  "packageFolders": {
+    "/Users/claudiumihaijechel/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Api/DlfVoting.Api.csproj",
+      "projectName": "DlfVoting.Api",
+      "projectPath": "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Api/DlfVoting.Api.csproj",
+      "packagesPath": "/Users/claudiumihaijechel/.nuget/packages/",
+      "outputPath": "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Api/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/Users/claudiumihaijechel/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "projectReferences": {
+            "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Application/DlfVoting.Application.csproj": {
+              "projectPath": "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Application/DlfVoting.Application.csproj"
+            },
+            "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Infrastructure/DlfVoting.Infrastructure.csproj": {
+              "projectPath": "/Users/claudiumihaijechel/Documents/GitHub/dlf-voting-website/backend/src/DlfVoting.Infrastructure/DlfVoting.Infrastructure.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net9.0": {
+        "targetAlias": "net9.0",
+        "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": {
+            "target": "Package",
+            "version": "[9.0.9, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.AspNetCore.App": {
+            "privateAssets": "none"
+          },
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.305/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}
