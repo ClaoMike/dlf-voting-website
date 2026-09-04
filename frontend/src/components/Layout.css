@@ -1,0 +1,37 @@
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+    background-color: #ffffff;
+}
+
+.app-content {
+    flex: 1;
+    padding: 2rem;
+}
+
+.app-sidebar {
+    width: 240px;
+    border-left: 1px solid #e5e5e5;
+    padding: 1.5rem 1rem;
+    background-color: #ffffff;
+}
+
+.sidebar-header {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.sidebar-logo {
+    width: 64px;
+    height: auto;
+}
+
+.sidebar-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
