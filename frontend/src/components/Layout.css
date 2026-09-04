@@ -36,3 +36,39 @@
     font-weight: 600;
     font-size: 0.95rem;
 }
+
+.sidebar-signout {
+    display: block;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border, #e5e4e7);
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nav-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--text, #6b6375);
+    font-size: 0.9rem;
+}
+
+.nav-link.active {
+    background-color: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+}
