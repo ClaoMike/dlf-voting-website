@@ -17,3 +17,7 @@ dist/
 .env.local
 *.local.json
 appsettings.Development.json
+
+# IDE
+.idea/
+.vscode/
