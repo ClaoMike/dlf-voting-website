@@ -62,3 +62,33 @@
 .confirm-dialog-confirm:hover {
     background-color: var(--danger-hover);
 }
+
+.confirm-dialog-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border, #e5e4e7);
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.confirm-dialog-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.confirm-dialog-save {
+    background-color: var(--accent);
+}
+
+.confirm-dialog-save:hover {
+    background-color: var(--accent);
+    filter: brightness(0.9);
+}
+
+.confirm-dialog-save:disabled {
+    background-color: #d0c3d9;
+    cursor: not-allowed;
+}

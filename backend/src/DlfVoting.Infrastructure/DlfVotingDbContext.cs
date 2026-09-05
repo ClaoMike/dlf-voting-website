@@ -11,9 +11,11 @@ public class DlfVotingDbContext : DbContext
     }
 
     public DbSet<Administrator> Administrators => Set<Administrator>();
-
+    public DbSet<VotingOption> VotingOptions => Set<VotingOption>();
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        
         modelBuilder.Entity<Administrator>(entity =>
         {
             entity.HasKey(a => a.Id);
@@ -21,5 +23,13 @@ public class DlfVotingDbContext : DbContext
             entity.HasIndex(a => a.Email).IsUnique();
             entity.Property(a => a.PasswordHash).IsRequired();
         });
+        
+        modelBuilder.Entity<VotingOption>(entity =>
+        {
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(v => v.Name).IsUnique();
+        });
+        
     }
 }
