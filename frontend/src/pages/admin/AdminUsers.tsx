@@ -158,17 +158,19 @@ function AdminUsers() {
         <div className="voting-options-page">
             <h1>Users</h1>
 
-            <button className="voting-options-add-row-button" onClick={() => setShowCreate(true)}>
-                Add user
-            </button>
+            <div className="users-actions-row">
+                <button className="voting-options-add-row-button" onClick={() => setShowCreate(true)}>
+                    Add user
+                </button>
 
-            <button
-                className="voting-options-remove-all"
-                disabled={users.length === 0}
-                onClick={() => setShowRemoveAllConfirm(true)}
-            >
-                Remove all
-            </button>
+                <button
+                    className="voting-options-remove-all"
+                    disabled={users.length === 0}
+                    onClick={() => setShowRemoveAllConfirm(true)}
+                >
+                    Remove all
+                </button>
+            </div>
 
             {error && <p className="voting-options-error">{error}</p>}
 
