@@ -145,4 +145,11 @@ public class VotingOptionsController : ControllerBase
         return NoContent();
     }
     
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAll()
+    {
+        await _db.VotingOptions.ExecuteDeleteAsync();
+        return NoContent();
+    }
+    
 }

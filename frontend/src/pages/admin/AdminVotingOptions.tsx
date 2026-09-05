@@ -21,6 +21,7 @@ function AdminVotingOptions() {
 
     const [editingOption, setEditingOption] = useState<VotingOption | null>(null)
     const [deletingOption, setDeletingOption] = useState<VotingOption | null>(null)
+    const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false)
 
     const fetchOptions = async () => {
         setIsLoading(true)
@@ -118,6 +119,26 @@ function AdminVotingOptions() {
         }
     }
 
+    const handleConfirmRemoveAll = async () => {
+        setError(null)
+        try {
+            const res = await fetch(API_BASE, {
+                method: 'DELETE',
+                credentials: 'include',
+            })
+
+            if (!res.ok) {
+                setError('Failed to remove all voting options.')
+            }
+
+            setShowRemoveAllConfirm(false)
+            await fetchOptions()
+        } catch {
+            setError('Failed to remove all voting options.')
+            setShowRemoveAllConfirm(false)
+        }
+    }
+
     return (
         <div className="voting-options-page">
             <h1>Voting Options</h1>
@@ -136,6 +157,14 @@ function AdminVotingOptions() {
                     Add option
                 </button>
             </div>
+
+            <button
+                className="voting-options-remove-all"
+                disabled={options.length === 0}
+                onClick={() => setShowRemoveAllConfirm(true)}
+            >
+                Remove all
+            </button>
 
             {error && <p className="voting-options-error">{error}</p>}
 
@@ -156,14 +185,9 @@ function AdminVotingOptions() {
                             <td>{option.name}</td>
                             <td>{new Date(option.createdAt).toLocaleDateString()}</td>
                             <td className="voting-options-actions">
-
-                                <button
-                                    className="voting-options-edit"
-                                    onClick={() => setEditingOption(option)}
-                                >
+                                <button className="voting-options-edit" onClick={() => setEditingOption(option)}>
                                     Edit
                                 </button>
-                                
                                 <button
                                     className="voting-options-remove"
                                     onClick={() => setDeletingOption(option)}
@@ -193,6 +217,16 @@ function AdminVotingOptions() {
                     confirmLabel="Remove"
                     onConfirm={handleConfirmDelete}
                     onCancel={() => setDeletingOption(null)}
+                />
+            )}
+
+            {showRemoveAllConfirm && (
+                <ConfirmDialog
+                    title="Remove all voting options"
+                    message="Are you sure you want to remove all voting options? This cannot be undone."
+                    confirmLabel="Remove all"
+                    onConfirm={handleConfirmRemoveAll}
+                    onCancel={() => setShowRemoveAllConfirm(false)}
                 />
             )}
         </div>

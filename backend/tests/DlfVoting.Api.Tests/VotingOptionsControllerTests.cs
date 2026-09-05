@@ -36,6 +36,30 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         var response = await client.PostAsJsonAsync("/api/voting-options", new { name = "Test" });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+    
+    [Fact]
+    public async Task Update_WithoutAuth_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+        var response = await client.PutAsJsonAsync($"/api/voting-options/{Guid.NewGuid()}", new { name = "Test" });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_WithoutAuth_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+        var response = await client.DeleteAsync($"/api/voting-options/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAll_WithoutAuth_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+        var response = await client.DeleteAsync("/api/voting-options");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 
     // --- Create ---
 
@@ -165,6 +189,31 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         var secondResponse = await client.DeleteAsync($"/api/voting-options/{id}");
         Assert.Equal(HttpStatusCode.NotFound, secondResponse.StatusCode);
     }
+    
+    [Fact]
+    public async Task DeleteAll_WithMultipleOptions_RemovesAllOfThem()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await CreateOptionAsync(client, "Option A");
+        await CreateOptionAsync(client, "Option B");
+        await CreateOptionAsync(client, "Option C");
+
+        var response = await client.DeleteAsync("/api/voting-options");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var listResponse = await client.GetAsync("/api/voting-options");
+        var options = await listResponse.Content.ReadFromJsonAsync<List<VotingOptionResponseDto>>();
+        Assert.Empty(options!);
+    }
+
+    [Fact]
+    public async Task DeleteAll_WithNoOptions_StillReturnsNoContent()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.DeleteAsync("/api/voting-options");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
 
     // --- Concurrency / race conditions ---
 
@@ -240,4 +289,52 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         var options = await listResponse.Content.ReadFromJsonAsync<List<VotingOptionResponseDto>>();
         Assert.DoesNotContain(options!, o => o.Id == id);
     }
+    
+    [Fact]
+    public async Task ConcurrentDeleteAll_BothCallsSucceed()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await CreateOptionAsync(client, "Option A");
+        await CreateOptionAsync(client, "Option B");
+
+        var task1 = client.DeleteAsync("/api/voting-options");
+        var task2 = client.DeleteAsync("/api/voting-options");
+        var responses = await Task.WhenAll(task1, task2);
+
+        // Bulk delete has no per-row concurrency check, so both calls succeed
+        // regardless of which one "wins" the race for actual rows.
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.NoContent, r.StatusCode));
+
+        var listResponse = await client.GetAsync("/api/voting-options");
+        var options = await listResponse.Content.ReadFromJsonAsync<List<VotingOptionResponseDto>>();
+        Assert.Empty(options!);
+    }
+
+    [Fact]
+    public async Task ConcurrentDeleteAllAndCreate_NeverLeavesPartialInconsistentState()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await CreateOptionAsync(client, "Existing Option");
+
+        var deleteAllTask = client.DeleteAsync("/api/voting-options");
+        var createTask = client.PostAsJsonAsync("/api/voting-options", new { name = "New Option" });
+        var deleteResponse = await deleteAllTask;
+        var createResponse = await createTask;
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+
+        // Whichever order they landed in, the list must reflect a valid end state:
+        // either just "New Option" (create won), or empty (delete-all ran after create... 
+        // wait, ExecuteDelete has no filter, so if it runs after create, "New Option" is gone too)
+        var listResponse = await client.GetAsync("/api/voting-options");
+        var options = await listResponse.Content.ReadFromJsonAsync<List<VotingOptionResponseDto>>();
+
+        // The only two valid outcomes: New Option survived (create ran after delete-all),
+        // or the list is empty (delete-all ran after create and wiped it too).
+        Assert.True(
+            options!.Count == 0 || (options.Count == 1 && options[0].Name == "New Option"),
+            $"Unexpected state: {string.Join(", ", options.Select(o => o.Name))}");
+    }
+
 }
