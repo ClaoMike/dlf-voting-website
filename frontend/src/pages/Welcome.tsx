@@ -42,7 +42,7 @@ function Welcome() {
 
     return (
         <div className="welcome-page">
-            <h1>Welcome, {email}</h1>
+            <h1>Welcome, <span className="welcome-email">{email}</span></h1>
 
             <section className="vote-section">
                 {isLoading ? (

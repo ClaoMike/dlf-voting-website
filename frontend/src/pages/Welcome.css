@@ -44,3 +44,19 @@
     background-color: #d0c3d9;
     cursor: not-allowed;
 }
+
+.welcome-page h1 {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    row-gap: 2rem;
+    column-gap: 0.4rem;
+    text-align: center;
+    max-width: 90vw;
+}
+
+.welcome-email {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
