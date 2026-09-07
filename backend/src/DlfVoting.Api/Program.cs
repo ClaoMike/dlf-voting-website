@@ -56,13 +56,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+using var scope = app.Services.CreateScope();
+var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+await VotingSettingsSeeder.SeedAsync(db);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
     await AdminSeeder.SeedDefaultAdminAsync(db);
     await UserSeeder.SeedDevUsersAsync(db);
 }

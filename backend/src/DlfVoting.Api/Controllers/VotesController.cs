@@ -33,6 +33,7 @@ public class VotesController : ControllerBase
 
     [HttpGet("me")]
     [Authorize(AuthenticationSchemes = AuthSchemes.User)]
+    [RequireVotingOpen]
     public async Task<IActionResult> GetMyVote()
     {
         var userId = GetUserId();
@@ -48,6 +49,7 @@ public class VotesController : ControllerBase
 
     [HttpPost]
     [Authorize(AuthenticationSchemes = AuthSchemes.User)]
+    [RequireVotingOpen]
     public async Task<IActionResult> CastVote([FromBody] CastVoteRequest request)
     {
         var userId = GetUserId();

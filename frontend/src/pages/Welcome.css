@@ -64,3 +64,8 @@
 .current-vote-text {
     font-size: 1.05rem;
 }
+
+.voting-closed-message {
+    font-size: 1.1rem;
+    color: var(--text, #6b6375);
+}

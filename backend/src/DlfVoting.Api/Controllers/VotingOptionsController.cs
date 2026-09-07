@@ -24,6 +24,7 @@ public class VotingOptionsController : ControllerBase
 
     [HttpGet]
     [Authorize(AuthenticationSchemes = $"{AuthSchemes.Admin},{AuthSchemes.User}")]
+    [RequireVotingOpen]
     public async Task<IActionResult> GetAll()
     {
         var options = await _db.VotingOptions

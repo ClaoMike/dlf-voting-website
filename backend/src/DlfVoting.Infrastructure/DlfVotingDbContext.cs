@@ -14,6 +14,7 @@ public class DlfVotingDbContext : DbContext
     public DbSet<VotingOption> VotingOptions => Set<VotingOption>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Vote> Votes => Set<Vote>();
+    public DbSet<VotingSettings> VotingSettings => Set<VotingSettings>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,11 @@ public class DlfVotingDbContext : DbContext
             entity.HasIndex(v => v.UserId).IsUnique();
             entity.HasOne<User>().WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne<VotingOption>().WithMany().HasForeignKey(v => v.VotingOptionId).OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<VotingSettings>(entity =>
+        {
+            entity.HasKey(s => s.Id);
         });
         
     }

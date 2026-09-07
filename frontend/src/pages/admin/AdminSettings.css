@@ -1,0 +1,36 @@
+.settings-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.settings-toggle-label {
+    font-size: 1rem;
+}
+
+.settings-toggle-button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.settings-toggle-close {
+    background-color: var(--danger);
+}
+
+.settings-toggle-close:hover {
+    background-color: var(--danger-hover);
+}
+
+.settings-toggle-open {
+    background-color: var(--accent);
+}
+
+.settings-toggle-open:hover {
+    filter: brightness(0.9);
+}
