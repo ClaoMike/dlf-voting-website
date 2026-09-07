@@ -7,9 +7,9 @@ import './AdminOverview.css'
 type VoteRow = {
     userId: string
     email: string
-    votingOptionId: string
-    votingOptionName: string
-    updatedAt: string
+    votingOptionId: string | null
+    votingOptionName: string | null
+    updatedAt: string | null
 }
 
 type PagedVotes = {
@@ -130,7 +130,7 @@ function AdminOverview() {
             {isLoading ? (
                 <p>Loading...</p>
             ) : votes.length === 0 ? (
-                <p>No votes have been cast yet.</p>
+                <p>No users found.</p>
             ) : (
                 <>
                     <table className="voting-options-table">
@@ -145,17 +145,19 @@ function AdminOverview() {
                         {votes.map((vote) => (
                             <tr key={vote.userId}>
                                 <td>{vote.email}</td>
-                                <td>{vote.votingOptionName}</td>
+                                <td>{vote.votingOptionName ?? ''}</td>
                                 <td className="voting-options-actions">
                                     <button className="voting-options-edit" onClick={() => setEditingVote(vote)}>
                                         Edit
                                     </button>
-                                    <button
-                                        className="voting-options-remove"
-                                        onClick={() => setDeletingVote(vote)}
-                                    >
-                                        Remove
-                                    </button>
+                                    {vote.votingOptionId && (
+                                        <button
+                                            className="voting-options-remove"
+                                            onClick={() => setDeletingVote(vote)}
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -179,7 +181,7 @@ function AdminOverview() {
             {editingVote && (
                 <EditVoteDialog
                     options={options}
-                    initialOptionId={editingVote.votingOptionId}
+                    initialOptionId={editingVote.votingOptionId ?? ''}
                     onSave={handleEditSave}
                     onCancel={() => setEditingVote(null)}
                 />

@@ -9,7 +9,6 @@ namespace DlfVoting.Api.Controllers;
 
 [ApiController]
 [Route("api/votes")]
-[Authorize(AuthenticationSchemes = AuthSchemes.User)]
 public class VotesController : ControllerBase
 {
     private const int PageSize = 25;
@@ -23,7 +22,7 @@ public class VotesController : ControllerBase
 
     public record CastVoteRequest(Guid VotingOptionId);
     public record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
-    public record AdminVoteResponse(Guid UserId, string Email, Guid VotingOptionId, string VotingOptionName, DateTime UpdatedAt);
+    public record AdminVoteResponse(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     public record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page, int PageSize);
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -31,6 +30,7 @@ public class VotesController : ControllerBase
     // --- User-facing endpoints ---
 
     [HttpGet("me")]
+    [Authorize(AuthenticationSchemes = AuthSchemes.User)]
     public async Task<IActionResult> GetMyVote()
     {
         var userId = GetUserId();
@@ -45,6 +45,7 @@ public class VotesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(AuthenticationSchemes = AuthSchemes.User)]
     public async Task<IActionResult> CastVote([FromBody] CastVoteRequest request)
     {
         var userId = GetUserId();
@@ -59,12 +60,23 @@ public class VotesController : ControllerBase
     {
         if (page < 1) page = 1;
 
-        var query =
+        var voteInfo =
             from v in _db.Votes
-            join u in _db.Users on v.UserId equals u.Id
             join o in _db.VotingOptions on v.VotingOptionId equals o.Id
+            select new { v.UserId, OptionId = o.Id, OptionName = o.Name, v.UpdatedAt };
+
+        var query =
+            from u in _db.Users
+            join vi in voteInfo on u.Id equals vi.UserId into viJoin
+            from vi in viJoin.DefaultIfEmpty()
             orderby u.Email
-            select new AdminVoteResponse(u.Id, u.Email, o.Id, o.Name, v.UpdatedAt);
+            select new AdminVoteResponse(
+                u.Id,
+                u.Email,
+                vi != null ? (Guid?)vi.OptionId : null,
+                vi != null ? vi.OptionName : null,
+                vi != null ? (DateTime?)vi.UpdatedAt : null
+            );
 
         var totalCount = await query.CountAsync();
 
