@@ -1,0 +1,46 @@
+.welcome-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 2rem;
+}
+
+.vote-section {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+.vote-select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border, #e5e4e7);
+    border-radius: 4px;
+    font-size: 1rem;
+    background-color: white;
+}
+
+.vote-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.vote-submit {
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--accent);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vote-submit:disabled {
+    background-color: #d0c3d9;
+    cursor: not-allowed;
+}
