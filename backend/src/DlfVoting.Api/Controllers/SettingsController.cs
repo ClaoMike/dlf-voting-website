@@ -10,6 +10,7 @@ namespace DlfVoting.Api.Controllers;
 public class SettingsController : ControllerBase
 {
     private readonly DlfVotingDbContext _db;
+    private static readonly Guid SettingsRowId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
     public SettingsController(DlfVotingDbContext db)
     {
@@ -31,18 +32,14 @@ public class SettingsController : ControllerBase
     [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
     public async Task<IActionResult> UpdateStatus([FromBody] UpdateVotingStatusRequest request)
     {
-        var settings = await _db.VotingSettings.FirstOrDefaultAsync();
-        if (settings is null)
-        {
-            settings = new Domain.VotingSettings { Id = Guid.NewGuid() };
-            _db.VotingSettings.Add(settings);
-        }
+        var now = DateTime.UtcNow;
 
-        settings.IsVotingOpen = request.IsVotingOpen;
-        settings.UpdatedAt = DateTime.UtcNow;
+        await _db.Database.ExecuteSqlRawAsync(
+            "INSERT INTO \"VotingSettings\" (\"Id\", \"IsVotingOpen\", \"UpdatedAt\") " +
+            "VALUES ({0}, {1}, {2}) " +
+            "ON CONFLICT (\"Id\") DO UPDATE SET \"IsVotingOpen\" = EXCLUDED.\"IsVotingOpen\", \"UpdatedAt\" = EXCLUDED.\"UpdatedAt\"",
+            SettingsRowId, request.IsVotingOpen, now);
 
-        await _db.SaveChangesAsync();
-
-        return Ok(new VotingStatusResponse(settings.IsVotingOpen));
+        return Ok(new VotingStatusResponse(request.IsVotingOpen));
     }
 }

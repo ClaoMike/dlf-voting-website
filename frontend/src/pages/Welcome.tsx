@@ -30,26 +30,6 @@ function Welcome() {
     const [showEditVote, setShowEditVote] = useState(false)
     const [isVotingOpen, setIsVotingOpen] = useState<boolean | null>(null)
 
-    const fetchAll = async () => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const [optionsRes, voteRes] = await Promise.all([
-                fetch(OPTIONS_API, { credentials: 'include' }),
-                fetch(`${VOTES_API}/me`, { credentials: 'include' }),
-            ])
-
-            if (!optionsRes.ok || !voteRes.ok) throw new Error('Failed to load voting data.')
-
-            setOptions(await optionsRes.json())
-            setMyVote(await voteRes.json())
-        } catch {
-            setError('Could not load voting options.')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     useEffect(() => {
         const fetchAll = async () => {
             setIsLoading(true)
