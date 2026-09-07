@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import EditVoteDialog from '../../components/EditVoteDialog'
+import ProgressRing from '../../components/ProgressRing'
+import VoteBarChart from '../../components/VoteBarChart'
 import '../admin/AdminVotingOptions.css'
+import '../../components/VoteBarChart.css'
 import './AdminOverview.css'
 
 type VoteRow = {
@@ -24,6 +27,20 @@ type VotingOption = {
     name: string
 }
 
+type OptionVoteCount = {
+    votingOptionId: string
+    votingOptionName: string
+    count: number
+}
+
+type VoteStats = {
+    totalUsers: number
+    votedUsers: number
+    optionCounts: OptionVoteCount[]
+}
+
+const STATS_API = 'http://localhost:5120/api/votes/stats'
+
 type Tab = 'all' | 'voted'
 
 const VOTES_API = 'http://localhost:5120/api/votes'
@@ -43,6 +60,23 @@ function AdminOverview() {
     const [deletingVote, setDeletingVote] = useState<VoteRow | null>(null)
 
     const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
+
+    const [stats, setStats] = useState<VoteStats | null>(null)
+
+    const fetchStats = async () => {
+        try {
+            const res = await fetch(STATS_API, { credentials: 'include' })
+            if (res.ok) setStats(await res.json())
+        } catch {
+            // stats are supplementary; a failure here doesn't block the table
+        }
+    }
+
+    useEffect(() => {
+        fetchVotes(1, tab)
+        fetchOptions()
+        fetchStats()
+    }, [tab])
 
     const fetchVotes = async (targetPage: number, targetTab: Tab) => {
         setIsLoading(true)
@@ -86,7 +120,6 @@ function AdminOverview() {
 
     const handleEditSave = async (optionId: string) => {
         if (!editingVote) return
-
         setError(null)
         try {
             const res = await fetch(`${VOTES_API}/${editingVote.userId}`, {
@@ -95,14 +128,13 @@ function AdminOverview() {
                 credentials: 'include',
                 body: JSON.stringify({ votingOptionId: optionId }),
             })
-
             if (!res.ok) {
                 const body = await res.json().catch(() => null)
                 setError(body?.message ?? 'Failed to update vote.')
             }
-
             setEditingVote(null)
             await fetchVotes(page, tab)
+            await fetchStats()
         } catch {
             setError('Failed to update vote.')
             setEditingVote(null)
@@ -111,21 +143,19 @@ function AdminOverview() {
 
     const handleConfirmDelete = async () => {
         if (!deletingVote) return
-
         setError(null)
         try {
             const res = await fetch(`${VOTES_API}/${deletingVote.userId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             })
-
             if (!res.ok && res.status !== 404) {
                 const body = await res.json().catch(() => null)
                 setError(body?.message ?? 'Failed to remove vote.')
             }
-
             setDeletingVote(null)
             await fetchVotes(page, tab)
+            await fetchStats()
         } catch {
             setError('Failed to remove vote.')
             setDeletingVote(null)
@@ -135,6 +165,24 @@ function AdminOverview() {
     return (
         <div className="voting-options-page">
             <h1>Overview</h1>
+
+            {stats && (
+                <div className="overview-charts">
+                    <ProgressRing
+                        value={stats.votedUsers}
+                        max={stats.totalUsers}
+                        label={`${stats.votedUsers} / ${stats.totalUsers}`}
+                    />
+                    <ProgressRing
+                        value={stats.votedUsers}
+                        max={stats.totalUsers}
+                        label={`${stats.totalUsers > 0 ? Math.round((stats.votedUsers / stats.totalUsers) * 100) : 0}%`}
+                    />
+                    <VoteBarChart
+                        data={stats.optionCounts.map((o) => ({ name: o.votingOptionName, count: o.count }))}
+                    />
+                </div>
+            )}
 
             <div className="overview-tabs">
                 <button

@@ -24,6 +24,8 @@ public class VotesController : ControllerBase
     public record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     public record AdminVoteResponse(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     public record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page, int PageSize);
+    public record OptionVoteCount(Guid VotingOptionId, string VotingOptionName, int Count);
+    public record VoteStatsResponse(int TotalUsers, int VotedUsers, List<OptionVoteCount> OptionCounts);
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -137,6 +139,23 @@ public class VotesController : ControllerBase
         }
 
         return NoContent();
+    }
+    
+    [HttpGet("stats")]
+    [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
+    public async Task<IActionResult> GetStats()
+    {
+        var totalUsers = await _db.Users.CountAsync();
+        var votedUsers = await _db.Votes.CountAsync();
+
+        var optionCounts = await (
+            from o in _db.VotingOptions
+            select new OptionVoteCount(o.Id, o.Name, _db.Votes.Count(v => v.VotingOptionId == o.Id))
+        ).ToListAsync();
+
+        optionCounts = optionCounts.OrderByDescending(o => o.Count).ToList();
+
+        return Ok(new VoteStatsResponse(totalUsers, votedUsers, optionCounts));
     }
 
     // --- Shared upsert logic ---
