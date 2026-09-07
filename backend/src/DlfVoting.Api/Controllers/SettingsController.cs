@@ -24,7 +24,10 @@ public class SettingsController : ControllerBase
     [Authorize(AuthenticationSchemes = $"{AuthSchemes.Admin},{AuthSchemes.User}")]
     public async Task<IActionResult> GetStatus()
     {
-        var settings = await _db.VotingSettings.AsNoTracking().FirstOrDefaultAsync();
+        var settings = await _db.VotingSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == SettingsRowId);
+
         return Ok(new VotingStatusResponse(settings?.IsVotingOpen ?? true));
     }
 
