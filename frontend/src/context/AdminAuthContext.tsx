@@ -58,12 +58,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
 
     const logout = async () => {
+        setIsAuthenticated(false)
+        setEmail(null)
         await fetch('http://localhost:5120/api/auth/admin/logout', {
             method: 'POST',
             credentials: 'include',
         })
-        setIsAuthenticated(false)
-        setEmail(null)
     }
 
     return (

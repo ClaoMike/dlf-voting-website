@@ -60,3 +60,7 @@
     word-break: break-word;
     overflow-wrap: anywhere;
 }
+
+.current-vote-text {
+    font-size: 1.05rem;
+}

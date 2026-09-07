@@ -78,3 +78,30 @@
     color: var(--accent);
     font-weight: 600;
 }
+
+.sidebar-signout-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+.sidebar-signout-row .sidebar-signout {
+    margin-top: 0;
+}
+
+.sidebar-switch-login {
+    display: block;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border, #e5e4e7);
+    border-radius: 4px;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.sidebar-switch-login:hover {
+    background-color: #f5f5f5;
+}

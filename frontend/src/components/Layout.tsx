@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import dlfLogo from '../assets/dlf-logo.svg'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useUserAuth } from '../context/UserAuthContext'
@@ -18,18 +18,24 @@ function Layout() {
     const admin = useAdminAuth()
     const user = useUserAuth()
     const navigate = useNavigate()
+    const location = useLocation()
     const [confirmingSignOutAs, setConfirmingSignOutAs] = useState<'admin' | 'user' | null>(null)
 
-    const handleConfirmSignOut = async () => {
+    const handleConfirmSignOut = () => {
         if (confirmingSignOutAs === 'admin') {
             setConfirmingSignOutAs(null)
-            await admin.logout()
+            admin.logout()
             navigate('/login/admin')
         } else if (confirmingSignOutAs === 'user') {
             setConfirmingSignOutAs(null)
-            await user.logout()
+            user.logout()
             navigate('/login')
         }
+    }
+
+    const handleSignOutAndLoginAsUser = async () => {
+        await admin.logout()
+        window.location.href = '/login'
     }
 
     return (
@@ -42,12 +48,17 @@ function Layout() {
 
                 {admin.isAuthenticated && (
                     <>
-                        <button
-                            className="sidebar-signout"
-                            onClick={() => setConfirmingSignOutAs('admin')}
-                        >
-                            Sign out
-                        </button>
+                        <div className="sidebar-signout-row">
+                            <button
+                                className="sidebar-signout"
+                                onClick={() => setConfirmingSignOutAs('admin')}
+                            >
+                                Sign out
+                            </button>
+                            <button className="sidebar-signout" onClick={handleSignOutAndLoginAsUser}>
+                                Sign out and log in as a user
+                            </button>
+                        </div>
 
                         <ul className="sidebar-nav">
                             {ADMIN_NAV_ITEMS.map((item) => (
@@ -70,6 +81,12 @@ function Layout() {
                         onClick={() => setConfirmingSignOutAs('user')}
                     >
                         Sign out
+                    </button>
+                )}
+
+                {!admin.isAuthenticated && !user.isAuthenticated && location.pathname === '/login/admin' && (
+                    <button className="sidebar-switch-login" onClick={() => navigate('/login')}>
+                        Trying to log in as a user?
                     </button>
                 )}
             </nav>

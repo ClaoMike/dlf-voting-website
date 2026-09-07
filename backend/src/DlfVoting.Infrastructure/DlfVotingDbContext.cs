@@ -13,6 +13,7 @@ public class DlfVotingDbContext : DbContext
     public DbSet<Administrator> Administrators => Set<Administrator>();
     public DbSet<VotingOption> VotingOptions => Set<VotingOption>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Vote> Votes => Set<Vote>();
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +39,14 @@ public class DlfVotingDbContext : DbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(320);
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.PasswordHash).IsRequired();
+        });
+        
+        modelBuilder.Entity<Vote>(entity =>
+        {
+            entity.HasKey(v => v.Id);
+            entity.HasIndex(v => v.UserId).IsUnique();
+            entity.HasOne<User>().WithMany().HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<VotingOption>().WithMany().HasForeignKey(v => v.VotingOptionId).OnDelete(DeleteBehavior.Cascade);
         });
         
     }
