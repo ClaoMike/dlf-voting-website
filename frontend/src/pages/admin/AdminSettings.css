@@ -34,3 +34,18 @@
 .settings-toggle-open:hover {
     filter: brightness(0.9);
 }
+
+.settings-password-section {
+    margin-top: 2.5rem;
+    max-width: 480px;
+}
+
+.settings-password-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.settings-password-success {
+    color: var(--accent);
+    font-size: 0.9rem;
+}

@@ -30,7 +30,8 @@ public class AdministratorsController : ControllerBase
     public record UpdateAdministratorRequest(string? Email, string? Password);
     public record AdministratorResponse(Guid Id, string Email, DateTime CreatedAt);
     public record PagedAdministratorsResponse(List<AdministratorResponse> Items, int TotalCount, int Page, int PageSize);
-
+    public record ChangeOwnPasswordRequest(string Password);
+    
     private Guid GetCurrentAdminId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
@@ -196,6 +197,38 @@ public class AdministratorsController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPut("me/password")]
+    public async Task<IActionResult> ChangeOwnPassword([FromBody] ChangeOwnPasswordRequest request)
+    {
+        if (string.IsNullOrEmpty(request.Password) || !PasswordRegex.IsMatch(request.Password))
+        {
+            return BadRequest(new
+            {
+                message = "Password must be 20-64 characters and include at least one uppercase letter, one digit, and one special character."
+            });
+        }
+
+        var currentAdminId = GetCurrentAdminId();
+        var admin = await _db.Administrators.FindAsync(currentAdminId);
+        if (admin is null)
+        {
+            return NotFound(new { message = "Your account could not be found." });
+        }
+
+        admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return NotFound(new { message = "Your account could not be found." });
+        }
+
+        return Ok(new AdministratorResponse(admin.Id, admin.Email, admin.CreatedAt));
     }
 
     private static bool IsUniqueConstraintViolation(DbUpdateException ex)
