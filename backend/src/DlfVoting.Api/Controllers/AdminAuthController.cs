@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using DlfVoting.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -38,10 +37,10 @@ public class AdminAuthController : ControllerBase
             new(ClaimTypes.Email, admin.Email)
         };
 
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var identity = new ClaimsIdentity(claims, AuthSchemes.Admin);
         var principal = new ClaimsPrincipal(identity);
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+        await HttpContext.SignInAsync(AuthSchemes.Admin, principal, new AuthenticationProperties
         {
             IsPersistent = false,
             ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5)
@@ -53,11 +52,11 @@ public class AdminAuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignOutAsync(AuthSchemes.Admin);
         return Ok();
     }
 
-    [Authorize]
+    [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
     [HttpGet("me")]
     public IActionResult Me()
     {

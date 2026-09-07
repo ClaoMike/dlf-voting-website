@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import dlfLogo from '../assets/dlf-logo.svg'
-import { useAuth } from '../context/AuthContext'
+import { useAdminAuth } from '../context/AdminAuthContext'
+import { useUserAuth } from '../context/UserAuthContext'
 import ConfirmDialog from './ConfirmDialog'
 import './Layout.css'
 
@@ -14,14 +15,21 @@ const ADMIN_NAV_ITEMS = [
 ]
 
 function Layout() {
-    const { isAuthenticated, logout } = useAuth()
+    const admin = useAdminAuth()
+    const user = useUserAuth()
     const navigate = useNavigate()
-    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
+    const [confirmingSignOutAs, setConfirmingSignOutAs] = useState<'admin' | 'user' | null>(null)
 
     const handleConfirmSignOut = async () => {
-        setShowSignOutConfirm(false)
-        await logout()
-        navigate('/login/admin')
+        if (confirmingSignOutAs === 'admin') {
+            setConfirmingSignOutAs(null)
+            await admin.logout()
+            navigate('/login/admin')
+        } else if (confirmingSignOutAs === 'user') {
+            setConfirmingSignOutAs(null)
+            await user.logout()
+            navigate('/login')
+        }
     }
 
     return (
@@ -32,11 +40,11 @@ function Layout() {
                     <span className="sidebar-title">Voting System</span>
                 </div>
 
-                {isAuthenticated && (
+                {admin.isAuthenticated && (
                     <>
                         <button
                             className="sidebar-signout"
-                            onClick={() => setShowSignOutConfirm(true)}
+                            onClick={() => setConfirmingSignOutAs('admin')}
                         >
                             Sign out
                         </button>
@@ -55,18 +63,27 @@ function Layout() {
                         </ul>
                     </>
                 )}
+
+                {!admin.isAuthenticated && user.isAuthenticated && (
+                    <button
+                        className="sidebar-signout"
+                        onClick={() => setConfirmingSignOutAs('user')}
+                    >
+                        Sign out
+                    </button>
+                )}
             </nav>
             <main className="app-content">
                 <Outlet />
             </main>
 
-            {showSignOutConfirm && (
+            {confirmingSignOutAs && (
                 <ConfirmDialog
                     title="Sign out"
                     message="Are you sure you want to sign out?"
                     confirmLabel="Sign out"
                     onConfirm={handleConfirmSignOut}
-                    onCancel={() => setShowSignOutConfirm(false)}
+                    onCancel={() => setConfirmingSignOutAs(null)}
                 />
             )}
         </div>

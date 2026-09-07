@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAdminAuth } from '../context/AdminAuthContext'
+import { useUserAuth } from '../context/UserAuthContext'
 
-function ProtectedRoute() {
-    const { isAuthenticated, isLoading } = useAuth()
+export function AdminProtectedRoute() {
+    const { isAuthenticated, isLoading } = useAdminAuth()
 
     if (isLoading) return <div>Loading...</div>
     if (!isAuthenticated) return <Navigate to="/login/admin" replace />
@@ -10,4 +11,11 @@ function ProtectedRoute() {
     return <Outlet />
 }
 
-export default ProtectedRoute
+export function UserProtectedRoute() {
+    const { isAuthenticated, isLoading } = useUserAuth()
+
+    if (isLoading) return <div>Loading...</div>
+    if (!isAuthenticated) return <Navigate to="/login" replace />
+
+    return <Outlet />
+}

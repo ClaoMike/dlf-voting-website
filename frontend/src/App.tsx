@@ -1,25 +1,28 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import ProtectedRoute from './components/ProtectedRoute'
+import { AdminProtectedRoute, UserProtectedRoute } from './components/ProtectedRoute'
 import AdminLogin from './pages/AdminLogin'
+import UserLogin from './pages/UserLogin'
+import Welcome from './pages/Welcome'
 import AdminOverview from './pages/admin/AdminOverview'
 import AdminVotingOptions from './pages/admin/AdminVotingOptions'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAdministrators from './pages/admin/AdminAdministrators'
 import AdminSettings from './pages/admin/AdminSettings'
 
-function Home() {
-    return <h1>Home</h1>
-}
-
 function App() {
     return (
         <Routes>
             <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<UserLogin />} />
+                <Route path="/login" element={<UserLogin />} />
                 <Route path="/login/admin" element={<AdminLogin />} />
 
-                <Route element={<ProtectedRoute />}>
+                <Route element={<UserProtectedRoute />}>
+                    <Route path="/welcome" element={<Welcome />} />
+                </Route>
+
+                <Route element={<AdminProtectedRoute />}>
                     <Route path="/admin/overview" element={<AdminOverview />} />
                     <Route path="/admin/voting_options" element={<AdminVotingOptions />} />
                     <Route path="/admin/users" element={<AdminUsers />} />

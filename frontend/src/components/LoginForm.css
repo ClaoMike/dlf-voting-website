@@ -1,4 +1,4 @@
-.admin-login-page {
+.login-page {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -7,11 +7,11 @@
     min-height: calc(100svh - 4rem); /* accounts for .app-content padding */
 }
 
-.admin-login-title {
+.login-title {
     margin-bottom: 1.5rem;
 }
 
-.admin-login-form {
+.login-form {
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -19,20 +19,20 @@
     gap: 0.4rem;
 }
 
-.admin-login-form label {
+.login-form label {
     font-weight: 500;
     font-size: 0.9rem;
     margin-top: 0.5rem;
 }
 
-.admin-login-form input {
+.login-form input {
     padding: 0.6rem 0.75rem;
     border: 1px solid var(--border, #e5e4e7);
     border-radius: 4px;
     font-size: 1rem;
 }
 
-.admin-login-form input:focus {
+.login-form input:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-bg);
@@ -43,7 +43,7 @@
     font-size: 0.8rem;
 }
 
-.admin-login-form button {
+.login-form button {
     margin-top: 1.25rem;
     padding: 0.7rem;
     border: none;
@@ -54,7 +54,7 @@
     cursor: pointer;
 }
 
-.admin-login-form button:disabled {
+.login-form button:disabled {
     background-color: #d0c3d9;
     cursor: not-allowed;
 }

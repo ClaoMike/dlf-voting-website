@@ -1,3 +1,4 @@
+using DlfVoting.Api;
 using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -10,15 +11,29 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<DlfVotingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+builder.Services.AddAuthentication(AuthSchemes.Admin)
+    .AddCookie(AuthSchemes.Admin, options =>
     {
         options.Cookie.Name = "DlfVotingAdminAuth";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
-        options.SlidingExpiration = false; // fixed 5-minute session from login
+        options.SlidingExpiration = false;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // fine for local http dev
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+    })
+    .AddCookie(AuthSchemes.User, options =>
+    {
+        options.Cookie.Name = "DlfVotingUserAuth";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+        options.SlidingExpiration = false;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -53,11 +68,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontendDev");
-
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
