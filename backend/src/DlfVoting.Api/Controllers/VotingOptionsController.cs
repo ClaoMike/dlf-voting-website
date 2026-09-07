@@ -22,8 +22,8 @@ public class VotingOptionsController : ControllerBase
     public record UpdateVotingOptionRequest(string Name);
     public record VotingOptionResponse(Guid Id, string Name, DateTime CreatedAt);
 
-    // NOTE: this will require voter authentication too, once the Users feature exists.
     [HttpGet]
+    [Authorize(AuthenticationSchemes = $"{AuthSchemes.Admin},{AuthSchemes.User}")]
     public async Task<IActionResult> GetAll()
     {
         var options = await _db.VotingOptions

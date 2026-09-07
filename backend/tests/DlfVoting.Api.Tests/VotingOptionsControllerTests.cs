@@ -110,6 +110,16 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         var expected = names.OrderBy(n => n, StringComparer.Ordinal).ToList();
         Assert.Equal(expected, names);
     }
+    
+    [Fact]
+    public async Task UserSession_CanReadVotingOptions()
+    {
+        var userClient = await CreateAuthenticatedUserClientAsync();
+
+        var response = await userClient.GetAsync("/api/voting-options");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 
     // --- Update ---
 

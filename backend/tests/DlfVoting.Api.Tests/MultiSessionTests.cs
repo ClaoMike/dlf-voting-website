@@ -29,13 +29,13 @@ public class MultiSessionTests : IntegrationTestBase
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
-
+    
     [Fact]
     public async Task UserSession_DoesNotAuthorizeAdminOnlyResources()
     {
         var userClient = await CreateAuthenticatedUserClientAsync();
 
-        var response = await userClient.GetAsync("/api/voting-options");
+        var response = await userClient.PostAsJsonAsync("/api/voting-options", new { name = "Should Not Be Allowed" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
