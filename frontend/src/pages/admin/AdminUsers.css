@@ -40,3 +40,9 @@
 .users-actions-row .voting-options-remove-all {
     margin-bottom: 0;
 }
+
+.administrators-self-label {
+    font-size: 0.85rem;
+    color: var(--text, #6b6375);
+    font-style: italic;
+}

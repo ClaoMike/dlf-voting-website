@@ -8,9 +8,16 @@ type EditUserDialogProps = {
     onSave: (email: string | null, password: string | null) => void
     onCancel: () => void
     error: string | null
+    title?: string
 }
 
-function EditUserDialog({ initialEmail, onSave, onCancel, error }: EditUserDialogProps) {
+function EditUserDialog({
+                            initialEmail,
+                            onSave,
+                            onCancel,
+                            error,
+                            title = 'Edit user',
+                        }: EditUserDialogProps) {
     const [email, setEmail] = useState(initialEmail)
     const [password, setPassword] = useState('')
 
@@ -21,10 +28,7 @@ function EditUserDialog({ initialEmail, onSave, onCancel, error }: EditUserDialo
     const passwordEntered = password.length > 0
     const passwordValid = !passwordEntered || isValidPassword(password)
 
-    const canSubmit =
-        (emailChanged || passwordEntered) &&
-        emailValid &&
-        passwordValid
+    const canSubmit = (emailChanged || passwordEntered) && emailValid && passwordValid
 
     const handleSave = () => {
         onSave(emailChanged ? trimmedEmail : null, passwordEntered ? password : null)
@@ -33,7 +37,7 @@ function EditUserDialog({ initialEmail, onSave, onCancel, error }: EditUserDialo
     return (
         <div className="confirm-dialog-overlay">
             <div className="confirm-dialog" role="dialog" aria-modal="true">
-                <h2 className="confirm-dialog-title">Edit user</h2>
+                <h2 className="confirm-dialog-title">{title}</h2>
 
                 <input
                     className="confirm-dialog-input"

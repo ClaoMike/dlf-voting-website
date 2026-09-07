@@ -7,9 +7,17 @@ type CreateUserDialogProps = {
     onCreate: (email: string, password: string) => void
     onCancel: () => void
     error: string | null
+    title?: string
+    submitLabel?: string
 }
 
-function CreateUserDialog({ onCreate, onCancel, error }: CreateUserDialogProps) {
+function CreateUserDialog({
+                              onCreate,
+                              onCancel,
+                              error,
+                              title = 'New user',
+                              submitLabel = 'Create user',
+                          }: CreateUserDialogProps) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
 
@@ -20,7 +28,7 @@ function CreateUserDialog({ onCreate, onCancel, error }: CreateUserDialogProps) 
     return (
         <div className="confirm-dialog-overlay">
             <div className="confirm-dialog" role="dialog" aria-modal="true">
-                <h2 className="confirm-dialog-title">New user</h2>
+                <h2 className="confirm-dialog-title">{title}</h2>
 
                 <input
                     className="confirm-dialog-input"
@@ -52,7 +60,7 @@ function CreateUserDialog({ onCreate, onCancel, error }: CreateUserDialogProps) 
                         disabled={!canSubmit}
                         onClick={() => onCreate(email.trim(), password)}
                     >
-                        Create user
+                        {submitLabel}
                     </button>
                 </div>
             </div>
