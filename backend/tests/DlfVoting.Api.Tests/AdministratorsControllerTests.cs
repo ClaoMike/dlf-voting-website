@@ -431,4 +431,144 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var aResponse = await taskFromA;
         Assert.Equal(HttpStatusCode.NoContent, aResponse.StatusCode);
     }
+    
+    // --- ChangeOwnPassword ---
+    [Fact]
+    public async Task ChangeOwnPassword_WithoutAuth_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+        var response = await client.PutAsJsonAsync("/api/administrators/me/password", new { password = ValidPassword });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeOwnPassword_WithUserAuth_ReturnsUnauthorized()
+    {
+        var userClient = await CreateAuthenticatedUserClientAsync();
+        var response = await userClient.PutAsJsonAsync("/api/administrators/me/password", new { password = ValidPassword });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Short1!")]
+    [InlineData("nouppercasehere1234567!@#")]
+    [InlineData("NoDigitsHereAtAllForSure!@#")]
+    [InlineData("NoSpecialCharacters12345678")]
+    public async Task ChangeOwnPassword_WithInvalidPassword_ReturnsBadRequest(string password)
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var response = await client.PutAsJsonAsync("/api/administrators/me/password", new { password });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeOwnPassword_WithValidPassword_Succeeds()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        const string newPassword = "BrandNewValidPassword1!@#";
+
+        var response = await client.PutAsJsonAsync("/api/administrators/me/password", new { password = newPassword });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<AdministratorResponseDto>();
+        Assert.Equal(AdminEmail, body!.Email);
+    }
+
+    [Fact]
+    public async Task ChangeOwnPassword_ThenLoginWithNewPassword_Succeeds()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        const string newPassword = "AnotherBrandNewPassword1!@#";
+        await client.PutAsJsonAsync("/api/administrators/me/password", new { password = newPassword });
+
+        var loginClient = Factory.CreateClient();
+        var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
+        {
+            email = AdminEmail,
+            password = newPassword
+        });
+
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeOwnPassword_ThenLoginWithOldPassword_Fails()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await client.PutAsJsonAsync("/api/administrators/me/password", new { password = "YetAnotherNewPassword1!@#" });
+
+        var loginClient = Factory.CreateClient();
+        var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
+        {
+            email = AdminEmail,
+            password = AdminPassword // the original password from IntegrationTestBase seeding
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeOwnPassword_DoesNotAffectOtherAdminsSessions()
+    {
+        var selfClient = await CreateAuthenticatedClientAsync();
+        var otherAdminClient = await CreateSecondAdminAndLoginAsync("unaffected-admin@example.com", ValidPassword);
+
+        await selfClient.PutAsJsonAsync("/api/administrators/me/password", new { password = "SelfOnlyChange123!@#" });
+
+        // The other admin's own session and endpoint access must remain completely unaffected.
+        var response = await otherAdminClient.GetAsync("/api/administrators");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // --- ChangeOwnPassword: concurrency ---
+
+    [Fact]
+    public async Task ConcurrentChangeOwnPassword_TwoSimultaneousRequests_BothSucceedAndFinalPasswordWorks()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        const string passwordA = "ConcurrentPasswordA1!@#";
+        const string passwordB = "ConcurrentPasswordB1!@#";
+
+        var task1 = client.PutAsJsonAsync("/api/administrators/me/password", new { password = passwordA });
+        var task2 = client.PutAsJsonAsync("/api/administrators/me/password", new { password = passwordB });
+        var responses = await Task.WhenAll(task1, task2);
+
+        // A simple field update with no uniqueness constraint involved — both requests
+        // should succeed cleanly (last write wins), never crash or conflict.
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+
+        // Exactly one of the two passwords must now be the valid one — confirm by trying both.
+        var loginClient = Factory.CreateClient();
+        var loginA = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = passwordA });
+        var loginB = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = passwordB });
+
+        var successes = new[] { loginA.StatusCode, loginB.StatusCode }.Count(s => s == HttpStatusCode.OK);
+        Assert.Equal(1, successes);
+    }
+
+    [Fact]
+    public async Task ConcurrentChangeOwnPasswordFromTwoDifferentAdmins_EachOnlyAffectsThemselves()
+    {
+        var adminAClient = await CreateAuthenticatedClientAsync();
+        const string adminBEmail = "concurrent-self-change-b@example.com";
+        const string adminBOriginalPassword = ValidPassword;
+        var adminBClient = await CreateSecondAdminAndLoginAsync(adminBEmail, adminBOriginalPassword);
+
+        const string adminANewPassword = "AdminAConcurrentNew1!@#";
+        const string adminBNewPassword = "AdminBConcurrentNew1!@#";
+
+        var taskA = adminAClient.PutAsJsonAsync("/api/administrators/me/password", new { password = adminANewPassword });
+        var taskB = adminBClient.PutAsJsonAsync("/api/administrators/me/password", new { password = adminBNewPassword });
+        var responses = await Task.WhenAll(taskA, taskB);
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+
+        var loginClient = Factory.CreateClient();
+        var loginAWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = adminANewPassword });
+        var loginBWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = adminBEmail, password = adminBNewPassword });
+
+        Assert.Equal(HttpStatusCode.OK, loginAWithNew.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, loginBWithNew.StatusCode);
+    }
+
 }
