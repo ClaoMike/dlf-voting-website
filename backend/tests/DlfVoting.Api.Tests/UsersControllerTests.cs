@@ -121,7 +121,8 @@ public class UsersControllerTests : IntegrationTestBase
         var response = await client.GetAsync("/api/users?page=1");
         var body = await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>();
 
-        Assert.Equal(30, body!.TotalCount);
+        // +1 accounts for the base seeded test user (UserEmail) created in IntegrationTestBase.
+        Assert.Equal(31, body!.TotalCount);
         Assert.Equal(25, body.PageSize);
         Assert.Equal(25, body.Items.Count);
 
@@ -143,7 +144,8 @@ public class UsersControllerTests : IntegrationTestBase
         var body = await response.Content.ReadFromJsonAsync<PagedUsersResponseDto>();
 
         Assert.Equal(2, body!.Page);
-        Assert.Equal(5, body.Items.Count);
+        // 31 total, 25 on page 1 → 6 remain on page 2 (30 created + 1 base seeded user).
+        Assert.Equal(6, body.Items.Count);
     }
 
     // --- Update ---

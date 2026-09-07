@@ -14,6 +14,9 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
     protected const string AdminEmail = "test-admin@example.com";
     protected const string AdminPassword = "correct-horse-battery";
 
+    protected const string UserEmail = "test-user@example.com";
+    protected const string UserPassword = "correct-horse-battery-staple-1!";
+
     protected IntegrationTestBase(TestWebApplicationFactory factory)
     {
         Factory = factory;
@@ -24,6 +27,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         await _dbFixture.InitializeAsync();
         await _dbFixture.ResetAsync();
         await SeedAdminAsync();
+        await SeedUserAsync();
     }
 
     public Task DisposeAsync() => _dbFixture.DisposeAsync();
@@ -44,6 +48,22 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         await db.SaveChangesAsync();
     }
 
+    private async Task SeedUserAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = UserEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword),
+            CreatedAt = DateTime.UtcNow
+        });
+
+        await db.SaveChangesAsync();
+    }
+
     protected async Task<HttpClient> CreateAuthenticatedClientAsync()
     {
         var loginClient = Factory.CreateClient();
@@ -51,6 +71,23 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         {
             email = AdminEmail,
             password = AdminPassword
+        });
+
+        var cookie = response.Headers.GetValues("Set-Cookie").First().Split(';')[0];
+
+        var client = Factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Cookie", cookie);
+        return client;
+    }
+
+    protected async Task<HttpClient> CreateAuthenticatedUserClientAsync(
+        string? email = null, string? password = null)
+    {
+        var loginClient = Factory.CreateClient();
+        var response = await loginClient.PostAsJsonAsync("/api/auth/user/login", new
+        {
+            email = email ?? UserEmail,
+            password = password ?? UserPassword
         });
 
         var cookie = response.Headers.GetValues("Set-Cookie").First().Split(';')[0];
