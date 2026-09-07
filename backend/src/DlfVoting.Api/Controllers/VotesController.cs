@@ -12,6 +12,8 @@ namespace DlfVoting.Api.Controllers;
 [Authorize(AuthenticationSchemes = AuthSchemes.User)]
 public class VotesController : ControllerBase
 {
+    private const int PageSize = 25;
+
     private readonly DlfVotingDbContext _db;
 
     public VotesController(DlfVotingDbContext db)
@@ -21,8 +23,12 @@ public class VotesController : ControllerBase
 
     public record CastVoteRequest(Guid VotingOptionId);
     public record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
+    public record AdminVoteResponse(Guid UserId, string Email, Guid VotingOptionId, string VotingOptionName, DateTime UpdatedAt);
+    public record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page, int PageSize);
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    // --- User-facing endpoints ---
 
     [HttpGet("me")]
     public async Task<IActionResult> GetMyVote()
@@ -42,8 +48,76 @@ public class VotesController : ControllerBase
     public async Task<IActionResult> CastVote([FromBody] CastVoteRequest request)
     {
         var userId = GetUserId();
+        return await UpsertVoteAsync(userId, request.VotingOptionId);
+    }
 
-        var option = await _db.VotingOptions.FindAsync(request.VotingOptionId);
+    // --- Admin-facing endpoints ---
+
+    [HttpGet]
+    [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
+    public async Task<IActionResult> GetAllPaged([FromQuery] int page = 1)
+    {
+        if (page < 1) page = 1;
+
+        var query =
+            from v in _db.Votes
+            join u in _db.Users on v.UserId equals u.Id
+            join o in _db.VotingOptions on v.VotingOptionId equals o.Id
+            orderby u.Email
+            select new AdminVoteResponse(u.Id, u.Email, o.Id, o.Name, v.UpdatedAt);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((page - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
+
+        return Ok(new PagedVotesResponse(items, totalCount, page, PageSize));
+    }
+
+    [HttpPut("{userId}")]
+    [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
+    public async Task<IActionResult> AdminSetVote(Guid userId, [FromBody] CastVoteRequest request)
+    {
+        var userExists = await _db.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+        {
+            return NotFound(new { message = "This user no longer exists." });
+        }
+
+        return await UpsertVoteAsync(userId, request.VotingOptionId);
+    }
+
+    [HttpDelete("{userId}")]
+    [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
+    public async Task<IActionResult> AdminDeleteVote(Guid userId)
+    {
+        var vote = await _db.Votes.FirstOrDefaultAsync(v => v.UserId == userId);
+        if (vote is null)
+        {
+            return NotFound(new { message = "This user has not voted, or their vote was already removed." });
+        }
+
+        _db.Votes.Remove(vote);
+
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return NotFound(new { message = "This user has not voted, or their vote was already removed." });
+        }
+
+        return NoContent();
+    }
+
+    // --- Shared upsert logic ---
+
+    private async Task<IActionResult> UpsertVoteAsync(Guid userId, Guid votingOptionId)
+    {
+        var option = await _db.VotingOptions.FindAsync(votingOptionId);
         if (option is null)
         {
             return NotFound(new { message = "This voting option no longer exists." });
@@ -73,12 +147,11 @@ public class VotesController : ControllerBase
         }
         catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
         {
-            // Two simultaneous vote requests from the same user raced to insert their first vote.
-            return Conflict(new { message = "Please try voting again." });
+            return Conflict(new { message = "Please try again." });
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict(new { message = "Please try voting again." });
+            return Conflict(new { message = "Please try again." });
         }
 
         return Ok(new MyVoteResponse(true, option.Id, option.Name, DateTime.UtcNow));
