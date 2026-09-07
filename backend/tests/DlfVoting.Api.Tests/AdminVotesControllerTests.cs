@@ -408,5 +408,40 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var finalVote = await verifyDb.Votes.FirstAsync(v => v.UserId == userId);
         Assert.True(finalVote.VotingOptionId == optionA || finalVote.VotingOptionId == optionB);
     }
+    
+    [Fact]
+    public async Task GetAllPaged_OnlyVotedTrue_ReturnsOnlyUsersWhoVoted()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionId = await CreateVotingOptionAsync(adminClient, "Only Voted Filter Option");
+
+        var (_, voterClient) = await CreateAndLoginUserAsync("filter-voter@example.com", "SomeValidPassword1!@#");
+        await voterClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
+
+        await CreateAndLoginUserAsync("filter-nonvoter@example.com", "SomeValidPassword2!@#");
+
+        var response = await adminClient.GetAsync("/api/votes?onlyVoted=true");
+        var body = await response.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
+
+        Assert.Equal(1, body!.TotalCount);
+        Assert.Single(body.Items, v => v.Email == "filter-voter@example.com");
+        Assert.DoesNotContain(body.Items, v => v.Email == "filter-nonvoter@example.com");
+    }
+
+    [Fact]
+    public async Task GetAllPaged_OnlyVotedFalse_IsSameAsDefault()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionId = await CreateVotingOptionAsync(adminClient, "Explicit False Option");
+        await CreateAndLoginUserAsync("explicit-false-nonvoter@example.com", "SomeValidPassword1!@#");
+
+        var defaultResponse = await adminClient.GetAsync("/api/votes");
+        var explicitResponse = await adminClient.GetAsync("/api/votes?onlyVoted=false");
+
+        var defaultBody = await defaultResponse.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
+        var explicitBody = await explicitResponse.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
+
+        Assert.Equal(defaultBody!.TotalCount, explicitBody!.TotalCount);
+    }
 
 }

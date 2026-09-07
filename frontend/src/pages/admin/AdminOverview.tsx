@@ -24,10 +24,13 @@ type VotingOption = {
     name: string
 }
 
+type Tab = 'all' | 'voted'
+
 const VOTES_API = 'http://localhost:5120/api/votes'
 const OPTIONS_API = 'http://localhost:5120/api/voting-options'
 
 function AdminOverview() {
+    const [tab, setTab] = useState<Tab>('all')
     const [votes, setVotes] = useState<VoteRow[]>([])
     const [options, setOptions] = useState<VotingOption[]>([])
     const [page, setPage] = useState(1)
@@ -41,11 +44,14 @@ function AdminOverview() {
 
     const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
 
-    const fetchVotes = async (targetPage: number) => {
+    const fetchVotes = async (targetPage: number, targetTab: Tab) => {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await fetch(`${VOTES_API}?page=${targetPage}`, { credentials: 'include' })
+            const onlyVoted = targetTab === 'voted'
+            const res = await fetch(`${VOTES_API}?page=${targetPage}&onlyVoted=${onlyVoted}`, {
+                credentials: 'include',
+            })
             if (!res.ok) throw new Error('Failed to load votes.')
             const data: PagedVotes = await res.json()
             setVotes(data.items)
@@ -64,14 +70,19 @@ function AdminOverview() {
             const res = await fetch(OPTIONS_API, { credentials: 'include' })
             if (res.ok) setOptions(await res.json())
         } catch {
-            // options are only needed for the edit dialog; a failure here surfaces when the dialog opens empty
+            // options are only needed for the edit dialog
         }
     }
 
     useEffect(() => {
-        fetchVotes(1)
+        fetchVotes(1, tab)
         fetchOptions()
-    }, [])
+    }, [tab])
+
+    const handleTabChange = (newTab: Tab) => {
+        if (newTab === tab) return
+        setTab(newTab)
+    }
 
     const handleEditSave = async (optionId: string) => {
         if (!editingVote) return
@@ -91,7 +102,7 @@ function AdminOverview() {
             }
 
             setEditingVote(null)
-            await fetchVotes(page)
+            await fetchVotes(page, tab)
         } catch {
             setError('Failed to update vote.')
             setEditingVote(null)
@@ -114,7 +125,7 @@ function AdminOverview() {
             }
 
             setDeletingVote(null)
-            await fetchVotes(page)
+            await fetchVotes(page, tab)
         } catch {
             setError('Failed to remove vote.')
             setDeletingVote(null)
@@ -125,12 +136,27 @@ function AdminOverview() {
         <div className="voting-options-page">
             <h1>Overview</h1>
 
+            <div className="overview-tabs">
+                <button
+                    className={tab === 'all' ? 'overview-tab active' : 'overview-tab'}
+                    onClick={() => handleTabChange('all')}
+                >
+                    View all users
+                </button>
+                <button
+                    className={tab === 'voted' ? 'overview-tab active' : 'overview-tab'}
+                    onClick={() => handleTabChange('voted')}
+                >
+                    View users who voted
+                </button>
+            </div>
+
             {error && <p className="voting-options-error">{error}</p>}
 
             {isLoading ? (
                 <p>Loading...</p>
             ) : votes.length === 0 ? (
-                <p>No users found.</p>
+                <p>{tab === 'voted' ? 'No votes have been cast yet.' : 'No users found.'}</p>
             ) : (
                 <>
                     <table className="voting-options-table">
@@ -165,13 +191,13 @@ function AdminOverview() {
                     </table>
 
                     <div className="users-pagination">
-                        <button disabled={page <= 1} onClick={() => fetchVotes(page - 1)}>
+                        <button disabled={page <= 1} onClick={() => fetchVotes(page - 1, tab)}>
                             Previous
                         </button>
                         <span>
               Page {page} of {totalPages}
             </span>
-                        <button disabled={page >= totalPages} onClick={() => fetchVotes(page + 1)}>
+                        <button disabled={page >= totalPages} onClick={() => fetchVotes(page + 1, tab)}>
                             Next
                         </button>
                     </div>

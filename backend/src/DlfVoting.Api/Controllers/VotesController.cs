@@ -56,27 +56,41 @@ public class VotesController : ControllerBase
 
     [HttpGet]
     [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
-    public async Task<IActionResult> GetAllPaged([FromQuery] int page = 1)
+    public async Task<IActionResult> GetAllPaged([FromQuery] int page = 1, [FromQuery] bool onlyVoted = false)
     {
         if (page < 1) page = 1;
 
-        var voteInfo =
-            from v in _db.Votes
-            join o in _db.VotingOptions on v.VotingOptionId equals o.Id
-            select new { v.UserId, OptionId = o.Id, OptionName = o.Name, v.UpdatedAt };
+        IQueryable<AdminVoteResponse> query;
 
-        var query =
-            from u in _db.Users
-            join vi in voteInfo on u.Id equals vi.UserId into viJoin
-            from vi in viJoin.DefaultIfEmpty()
-            orderby u.Email
-            select new AdminVoteResponse(
-                u.Id,
-                u.Email,
-                vi != null ? (Guid?)vi.OptionId : null,
-                vi != null ? vi.OptionName : null,
-                vi != null ? (DateTime?)vi.UpdatedAt : null
-            );
+        if (onlyVoted)
+        {
+            query =
+                from v in _db.Votes
+                join u in _db.Users on v.UserId equals u.Id
+                join o in _db.VotingOptions on v.VotingOptionId equals o.Id
+                orderby u.Email
+                select new AdminVoteResponse(u.Id, u.Email, (Guid?)o.Id, o.Name, (DateTime?)v.UpdatedAt);
+        }
+        else
+        {
+            var voteInfo =
+                from v in _db.Votes
+                join o in _db.VotingOptions on v.VotingOptionId equals o.Id
+                select new { v.UserId, OptionId = o.Id, OptionName = o.Name, v.UpdatedAt };
+
+            query =
+                from u in _db.Users
+                join vi in voteInfo on u.Id equals vi.UserId into viJoin
+                from vi in viJoin.DefaultIfEmpty()
+                orderby u.Email
+                select new AdminVoteResponse(
+                    u.Id,
+                    u.Email,
+                    vi != null ? (Guid?)vi.OptionId : null,
+                    vi != null ? vi.OptionName : null,
+                    vi != null ? (DateTime?)vi.UpdatedAt : null
+                );
+        }
 
         var totalCount = await query.CountAsync();
 
