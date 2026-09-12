@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './LoginForm.css'
 
@@ -22,7 +22,7 @@ function LoginForm({ title, login, redirectTo }: LoginFormProps) {
     const isPasswordValid = password.length > 0
     const isFormValid = isEmailValid && isPasswordValid
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (!isFormValid) return
 

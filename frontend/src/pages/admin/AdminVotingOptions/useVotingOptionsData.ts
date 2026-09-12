@@ -13,7 +13,7 @@ export function useVotingOptionsData() {
         setError(null)
         try {
             const res = await fetch(API_BASE, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load voting options.')
+            if (!res.ok) setError('Failed to load voting options.')
             const data = await res.json()
             setOptions(data)
         } catch {
@@ -24,7 +24,7 @@ export function useVotingOptionsData() {
     }
 
     useEffect(() => {
-        fetchOptions()
+        void fetchOptions()
     }, [])
 
     return { options, isLoading, error, fetchOptions }

@@ -26,7 +26,10 @@ export function useVotesData() {
             const res = await fetch(`${VOTES_API}?page=${targetPage}&onlyVoted=${onlyVoted}`, {
                 credentials: 'include',
             })
-            if (!res.ok) throw new Error('Failed to load votes.')
+            if (!res.ok) {
+                setError('Could not load votes.')
+                return
+            }
             const data: PagedVotes = await res.json()
             setVotes(data.items)
             setTotalCount(data.totalCount)
@@ -58,9 +61,9 @@ export function useVotesData() {
     }
 
     useEffect(() => {
-        fetchVotes(1, tab)
-        fetchOptions()
-        fetchStats()
+        void fetchVotes(1, tab)
+        void fetchOptions()
+        void fetchStats()
     }, [tab])
 
     const changeTab = (newTab: Tab) => {

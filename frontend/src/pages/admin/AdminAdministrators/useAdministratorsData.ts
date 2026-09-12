@@ -18,7 +18,10 @@ export function useAdministratorsData() {
         setError(null)
         try {
             const res = await fetch(`${API_BASE}?page=${targetPage}`, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load administrators.')
+            if (!res.ok) {
+                setError('Could not load administrators.')
+                return
+            }
             const data: PagedAdministrators = await res.json()
             setAdmins(data.items)
             setTotalCount(data.totalCount)
@@ -32,7 +35,7 @@ export function useAdministratorsData() {
     }
 
     useEffect(() => {
-        fetchAdmins(1)
+        void fetchAdmins(1)
     }, [])
 
     return { admins, page, totalPages, isLoading, error, fetchAdmins }

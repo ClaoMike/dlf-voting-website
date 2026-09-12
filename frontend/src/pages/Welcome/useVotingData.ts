@@ -39,7 +39,7 @@ export function useVotingData() {
             }
         }
 
-        fetchAll()
+        void fetchAll()
     }, [])
 
     const submitVote = async (optionId: string) => {
@@ -57,7 +57,7 @@ export function useVotingData() {
                 return false
             }
 
-            if (!res.ok) throw new Error('Failed to submit vote.')
+            if (!res.ok) setError('Could not submit your vote.')
 
             setMyVote(await res.json())
             return true

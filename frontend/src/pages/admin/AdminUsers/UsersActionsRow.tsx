@@ -1,9 +1,11 @@
+import type { RefObject, ChangeEvent } from 'react'
+
 type UsersActionsRowProps = {
     onAddUser: () => void
     onImportClick: () => void
     isImporting: boolean
-    fileInputRef: React.RefObject<HTMLInputElement | null>
-    onFileSelected: (e: React.ChangeEvent<HTMLInputElement>) => void
+    fileInputRef: RefObject<HTMLInputElement | null>
+    onFileSelected: (e: ChangeEvent<HTMLInputElement>) => void
     canRemoveAll: boolean
     onRemoveAllClick: () => void
 }

@@ -37,7 +37,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
 
     useEffect(() => {
-        checkSession()
+        void checkSession()
     }, [])
 
     const login = async (loginEmail: string, password: string): Promise<LoginResult> => {

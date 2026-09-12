@@ -18,7 +18,7 @@ export function useUsersData() {
         setError(null)
         try {
             const res = await fetch(`${API_BASE}?page=${targetPage}`, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load users.')
+            if (!res.ok) setError('Failed to load users.')
             const data: PagedUsers = await res.json()
             setUsers(data.items)
             setTotalCount(data.totalCount)
@@ -32,7 +32,7 @@ export function useUsersData() {
     }
 
     useEffect(() => {
-        fetchUsers(1)
+        void fetchUsers(1)
     }, [])
 
     return { users, page, totalPages, isLoading, error, fetchUsers }

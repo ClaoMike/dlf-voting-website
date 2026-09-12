@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 
 const API_BASE = 'http://localhost:5120/api/users'
 
@@ -29,7 +29,7 @@ export function useUserImport(onChanged: () => Promise<void>) {
     const [error, setError] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 

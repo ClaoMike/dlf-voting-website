@@ -15,14 +15,14 @@ function Layout() {
     const location = useLocation()
     const [confirmingSignOutAs, setConfirmingSignOutAs] = useState<'admin' | 'user' | null>(null)
 
-    const handleConfirmSignOut = () => {
+    const handleConfirmSignOut = async () => {
         if (confirmingSignOutAs === 'admin') {
             setConfirmingSignOutAs(null)
-            admin.logout()
+            await admin.logout()
             navigate('/login/admin')
         } else if (confirmingSignOutAs === 'user') {
             setConfirmingSignOutAs(null)
-            user.logout()
+            await user.logout()
             navigate('/login')
         }
     }

@@ -12,7 +12,7 @@ export function useVotingStatus() {
         setError(null)
         try {
             const res = await fetch(STATUS_API, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load settings.')
+            if (!res.ok) setError('Failed to load settings.')
             const data = await res.json()
             setIsVotingOpen(data.isVotingOpen)
         } catch {
@@ -23,7 +23,7 @@ export function useVotingStatus() {
     }
 
     useEffect(() => {
-        fetchStatus()
+        void fetchStatus()
     }, [])
 
     const toggle = async () => {
@@ -37,7 +37,7 @@ export function useVotingStatus() {
                 credentials: 'include',
                 body: JSON.stringify({ isVotingOpen: newValue }),
             })
-            if (!res.ok) throw new Error('Failed to update setting.')
+            if (!res.ok) setError('Failed to update setting.')
             const data = await res.json()
             setIsVotingOpen(data.isVotingOpen)
         } catch {
