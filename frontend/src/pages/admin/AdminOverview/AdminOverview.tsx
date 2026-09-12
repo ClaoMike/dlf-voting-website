@@ -1,49 +1,16 @@
 import { useEffect, useState } from 'react'
 import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import EditVoteDialog from '../../../components/EditVoteDialog'
-import ProgressRing from '../../../components/ProgressRing'
-import VoteBarChart from '../../../components/VoteBarChart/VoteBarChart'
+import OverviewCharts from './OverviewCharts'
+import OverviewTabs from './OverviewTabs'
+import VotesTable from './VotesTable'
+import type { PagedVotes, Tab, VoteRow, VotingOption, VoteStats } from './types'
 
 import '../AdminVotingOptions/AdminVotingOptions.css'
 import '../../../components/VoteBarChart/VoteBarChart.css'
 import './AdminOverview.css'
 
-type VoteRow = {
-    userId: string
-    email: string
-    votingOptionId: string | null
-    votingOptionName: string | null
-    updatedAt: string | null
-}
-
-type PagedVotes = {
-    items: VoteRow[]
-    totalCount: number
-    page: number
-    pageSize: number
-}
-
-type VotingOption = {
-    id: string
-    name: string
-}
-
-type OptionVoteCount = {
-    votingOptionId: string
-    votingOptionName: string
-    count: number
-}
-
-type VoteStats = {
-    totalUsers: number
-    votedUsers: number
-    optionCounts: OptionVoteCount[]
-}
-
 const STATS_API = 'http://localhost:5120/api/votes/stats'
-
-type Tab = 'all' | 'voted'
-
 const VOTES_API = 'http://localhost:5120/api/votes'
 const OPTIONS_API = 'http://localhost:5120/api/voting-options'
 
@@ -56,28 +23,12 @@ function AdminOverview() {
     const [pageSize, setPageSize] = useState(25)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [stats, setStats] = useState<VoteStats | null>(null)
 
     const [editingVote, setEditingVote] = useState<VoteRow | null>(null)
     const [deletingVote, setDeletingVote] = useState<VoteRow | null>(null)
 
     const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
-
-    const [stats, setStats] = useState<VoteStats | null>(null)
-
-    const fetchStats = async () => {
-        try {
-            const res = await fetch(STATS_API, { credentials: 'include' })
-            if (res.ok) setStats(await res.json())
-        } catch {
-            // stats are supplementary; a failure here doesn't block the table
-        }
-    }
-
-    useEffect(() => {
-        fetchVotes(1, tab)
-        fetchOptions()
-        fetchStats()
-    }, [tab])
 
     const fetchVotes = async (targetPage: number, targetTab: Tab) => {
         setIsLoading(true)
@@ -109,9 +60,19 @@ function AdminOverview() {
         }
     }
 
+    const fetchStats = async () => {
+        try {
+            const res = await fetch(STATS_API, { credentials: 'include' })
+            if (res.ok) setStats(await res.json())
+        } catch {
+            // stats are supplementary; a failure here doesn't block the table
+        }
+    }
+
     useEffect(() => {
         fetchVotes(1, tab)
         fetchOptions()
+        fetchStats()
     }, [tab])
 
     const handleTabChange = (newTab: Tab) => {
@@ -167,90 +128,24 @@ function AdminOverview() {
         <div className="voting-options-page">
             <h1>Overview</h1>
 
-            {stats && (
-                <div className="overview-charts">
-                    <ProgressRing
-                        value={stats.votedUsers}
-                        max={stats.totalUsers}
-                        label={`${stats.votedUsers} / ${stats.totalUsers}`}
-                    />
-                    <ProgressRing
-                        value={stats.votedUsers}
-                        max={stats.totalUsers}
-                        label={`${stats.totalUsers > 0 ? Math.round((stats.votedUsers / stats.totalUsers) * 100) : 0}%`}
-                    />
-                    <VoteBarChart
-                        data={stats.optionCounts.map((o) => ({ name: o.votingOptionName, count: o.count }))}
-                    />
-                </div>
-            )}
+            {stats && <OverviewCharts stats={stats} />}
 
-            <div className="overview-tabs">
-                <button
-                    className={tab === 'all' ? 'overview-tab active' : 'overview-tab'}
-                    onClick={() => handleTabChange('all')}
-                >
-                    View all users
-                </button>
-                <button
-                    className={tab === 'voted' ? 'overview-tab active' : 'overview-tab'}
-                    onClick={() => handleTabChange('voted')}
-                >
-                    View users who voted
-                </button>
-            </div>
+            <OverviewTabs activeTab={tab} onTabChange={handleTabChange} />
 
             {error && <p className="voting-options-error">{error}</p>}
 
             {isLoading ? (
                 <p>Loading...</p>
-            ) : votes.length === 0 ? (
-                <p>{tab === 'voted' ? 'No votes have been cast yet.' : 'No users found.'}</p>
             ) : (
-                <>
-                    <table className="voting-options-table">
-                        <thead>
-                        <tr>
-                            <th>Email</th>
-                            <th>Vote</th>
-                            <th></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {votes.map((vote) => (
-                            <tr key={vote.userId}>
-                                <td>{vote.email}</td>
-                                <td>{vote.votingOptionName ?? ''}</td>
-                                <td className="voting-options-actions">
-                                    <button className="voting-options-edit" onClick={() => setEditingVote(vote)}>
-                                        Edit
-                                    </button>
-                                    {vote.votingOptionId && (
-                                        <button
-                                            className="voting-options-remove"
-                                            onClick={() => setDeletingVote(vote)}
-                                        >
-                                            Remove
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-
-                    <div className="users-pagination">
-                        <button disabled={page <= 1} onClick={() => fetchVotes(page - 1, tab)}>
-                            Previous
-                        </button>
-                        <span>
-              Page {page} of {totalPages}
-            </span>
-                        <button disabled={page >= totalPages} onClick={() => fetchVotes(page + 1, tab)}>
-                            Next
-                        </button>
-                    </div>
-                </>
+                <VotesTable
+                    votes={votes}
+                    tab={tab}
+                    page={page}
+                    totalPages={totalPages}
+                    onEdit={setEditingVote}
+                    onDelete={setDeletingVote}
+                    onPageChange={(newPage) => fetchVotes(newPage, tab)}
+                />
             )}
 
             {editingVote && (
