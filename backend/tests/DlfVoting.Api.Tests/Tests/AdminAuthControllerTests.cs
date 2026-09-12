@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DlfVoting.Api.Tests.Tests;
 
-public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
+public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime, IAsyncDisposable
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly DatabaseFixture _dbFixture = new();
@@ -27,7 +27,13 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
         await SeedTestAdminAsync();
     }
 
-    public Task DisposeAsync() => _dbFixture.DisposeAsync();
+    public Task DisposeAsync() => ((IAsyncDisposable)this).DisposeAsync().AsTask();
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await ((IAsyncDisposable)_dbFixture).DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     private async Task SeedTestAdminAsync()
     {

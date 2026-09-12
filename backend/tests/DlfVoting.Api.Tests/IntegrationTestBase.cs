@@ -5,8 +5,7 @@ using System.Net.Http.Json;
 
 namespace DlfVoting.Api.Tests;
 
-// ReSharper disable once ClassWithDisposableFieldNotDisposable
-public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
+public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime, IAsyncDisposable
 {
     protected TestWebApplicationFactory Factory { get; }
     private readonly DatabaseFixture _dbFixture = new();
@@ -31,7 +30,13 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         await SeedUserAsync();
     }
 
-    public Task DisposeAsync() => _dbFixture.DisposeAsync();
+    public Task DisposeAsync() => ((IAsyncDisposable)this).DisposeAsync().AsTask();
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await ((IAsyncDisposable)_dbFixture).DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     private async Task SeedAdminAsync()
     {
