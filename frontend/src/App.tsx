@@ -9,8 +9,15 @@ import AdminVotingOptions from './pages/admin/AdminVotingOptions'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminAdministrators from './pages/admin/AdminAdministrators'
 import AdminSettings from './pages/admin/AdminSettings'
+import {VOTING_SYSTEM_WEBSITE_TITLE} from "./constants/strings.ts";
+import {useEffect} from "react";
 
 function App() {
+
+    useEffect(() => {
+        document.title = VOTING_SYSTEM_WEBSITE_TITLE
+    }, [])
+    
     return (
         <Routes>
             <Route element={<Layout />}>

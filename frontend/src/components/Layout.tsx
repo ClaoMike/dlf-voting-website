@@ -5,6 +5,7 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { useUserAuth } from '../context/UserAuthContext'
 import ConfirmDialog from './ConfirmDialog'
 import './Layout.css'
+import { VOTING_SYSTEM_WEBSITE_TITLE } from '../constants/strings'
 
 const ADMIN_NAV_ITEMS = [
     { label: 'Overview', path: '/admin/overview' },
@@ -43,7 +44,7 @@ function Layout() {
             <nav className="app-sidebar">
                 <div className="sidebar-header">
                     <img src={dlfLogo} alt="DLF logo" className="sidebar-logo" />
-                    <span className="sidebar-title">Voting System</span>
+                    <span className="sidebar-title">{VOTING_SYSTEM_WEBSITE_TITLE}</span>
                 </div>
 
                 {admin.isAuthenticated && (

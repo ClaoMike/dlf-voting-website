@@ -228,7 +228,7 @@ function AdminUsers() {
             <div className="users-actions-row">
                 <button className="voting-options-add-row-button" onClick={() => setShowCreate(true)}>
                     Add user
-                </button>
+                </button> 
 
                 <button
                     className="voting-options-add-row-button"

@@ -1,0 +1,1 @@
+export const VOTING_SYSTEM_WEBSITE_TITLE = 'Koncernvalg 2026'
