@@ -1,20 +1,12 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import dlfLogo from '../../assets/dlf-logo.svg'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import { useUserAuth } from '../../context/UserAuthContext'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
-import { VOTING_SYSTEM_WEBSITE_TITLE } from '../../constants/strings'
-
+import SidebarHeader from './SidebarHeader'
+import AdminNav from './AdminNav'
+import SidebarAuthActions from './SidebarAuthActions'
 import './Layout.css'
-
-const ADMIN_NAV_ITEMS = [
-    { label: 'Overview', path: '/admin/overview' },
-    { label: 'Voting Options', path: '/admin/voting_options' },
-    { label: 'Users', path: '/admin/users' },
-    { label: 'Administrators', path: '/admin/administrators' },
-    { label: 'Settings', path: '/admin/settings' },
-]
 
 function Layout() {
     const admin = useAdminAuth()
@@ -43,54 +35,21 @@ function Layout() {
     return (
         <div className="app-shell">
             <nav className="app-sidebar">
-                <div className="sidebar-header">
-                    <img src={dlfLogo} alt="DLF logo" className="sidebar-logo" />
-                    <span className="sidebar-title">{VOTING_SYSTEM_WEBSITE_TITLE}</span>
-                </div>
+                <SidebarHeader />
 
-                {admin.isAuthenticated && (
-                    <>
-                        <div className="sidebar-signout-row">
-                            <button
-                                className="sidebar-signout"
-                                onClick={() => setConfirmingSignOutAs('admin')}
-                            >
-                                Sign out
-                            </button>
-                            <button className="sidebar-signout" onClick={handleSignOutAndLoginAsUser}>
-                                Sign out and log in as a user
-                            </button>
-                        </div>
+                {admin.isAuthenticated && <AdminNav />}
 
-                        <ul className="sidebar-nav">
-                            {ADMIN_NAV_ITEMS.map((item) => (
-                                <li key={item.path}>
-                                    <NavLink
-                                        to={item.path}
-                                        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-                                    >
-                                        {item.label}
-                                    </NavLink>
-                                </li>
-                            ))}
-                        </ul>
-                    </>
-                )}
-
-                {!admin.isAuthenticated && user.isAuthenticated && (
-                    <button
-                        className="sidebar-signout"
-                        onClick={() => setConfirmingSignOutAs('user')}
-                    >
-                        Sign out
-                    </button>
-                )}
-
-                {!admin.isAuthenticated && !user.isAuthenticated && location.pathname === '/login/admin' && (
-                    <button className="sidebar-switch-login" onClick={() => navigate('/login')}>
-                        Trying to log in as a user?
-                    </button>
-                )}
+                <SidebarAuthActions
+                    isAdmin={admin.isAuthenticated}
+                    isUser={!admin.isAuthenticated && user.isAuthenticated}
+                    isOnAdminLoginPage={
+                        !admin.isAuthenticated && !user.isAuthenticated && location.pathname === '/login/admin'
+                    }
+                    onAdminSignOutClick={() => setConfirmingSignOutAs('admin')}
+                    onSwitchToUserClick={handleSignOutAndLoginAsUser}
+                    onUserSignOutClick={() => setConfirmingSignOutAs('user')}
+                    onGoToUserLogin={() => navigate('/login')}
+                />
             </nav>
             <main className="app-content">
                 <Outlet />
