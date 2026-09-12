@@ -1,169 +1,61 @@
-import { useEffect, useState } from 'react'
 import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import EditVoteDialog from '../../../components/EditVoteDialog'
 import OverviewCharts from './OverviewCharts'
 import OverviewTabs from './OverviewTabs'
 import VotesTable from './VotesTable'
-import type { PagedVotes, Tab, VoteRow, VotingOption, VoteStats } from './types'
+import { useVotesData } from './useVotesData'
+import { useVoteActions } from './useVoteActions'
 
 import '../AdminVotingOptions/AdminVotingOptions.css'
 import '../../../components/VoteBarChart/VoteBarChart.css'
 import './AdminOverview.css'
 
-const STATS_API = 'http://localhost:5120/api/votes/stats'
-const VOTES_API = 'http://localhost:5120/api/votes'
-const OPTIONS_API = 'http://localhost:5120/api/voting-options'
-
 function AdminOverview() {
-    const [tab, setTab] = useState<Tab>('all')
-    const [votes, setVotes] = useState<VoteRow[]>([])
-    const [options, setOptions] = useState<VotingOption[]>([])
-    const [page, setPage] = useState(1)
-    const [totalCount, setTotalCount] = useState(0)
-    const [pageSize, setPageSize] = useState(25)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [stats, setStats] = useState<VoteStats | null>(null)
-
-    const [editingVote, setEditingVote] = useState<VoteRow | null>(null)
-    const [deletingVote, setDeletingVote] = useState<VoteRow | null>(null)
-
-    const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
-
-    const fetchVotes = async (targetPage: number, targetTab: Tab) => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const onlyVoted = targetTab === 'voted'
-            const res = await fetch(`${VOTES_API}?page=${targetPage}&onlyVoted=${onlyVoted}`, {
-                credentials: 'include',
-            })
-            if (!res.ok) throw new Error('Failed to load votes.')
-            const data: PagedVotes = await res.json()
-            setVotes(data.items)
-            setTotalCount(data.totalCount)
-            setPageSize(data.pageSize)
-            setPage(data.page)
-        } catch {
-            setError('Could not load votes.')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    const fetchOptions = async () => {
-        try {
-            const res = await fetch(OPTIONS_API, { credentials: 'include' })
-            if (res.ok) setOptions(await res.json())
-        } catch {
-            // options are only needed for the edit dialog
-        }
-    }
-
-    const fetchStats = async () => {
-        try {
-            const res = await fetch(STATS_API, { credentials: 'include' })
-            if (res.ok) setStats(await res.json())
-        } catch {
-            // stats are supplementary; a failure here doesn't block the table
-        }
-    }
-
-    useEffect(() => {
-        fetchVotes(1, tab)
-        fetchOptions()
-        fetchStats()
-    }, [tab])
-
-    const handleTabChange = (newTab: Tab) => {
-        if (newTab === tab) return
-        setTab(newTab)
-    }
-
-    const handleEditSave = async (optionId: string) => {
-        if (!editingVote) return
-        setError(null)
-        try {
-            const res = await fetch(`${VOTES_API}/${editingVote.userId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ votingOptionId: optionId }),
-            })
-            if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to update vote.')
-            }
-            setEditingVote(null)
-            await fetchVotes(page, tab)
-            await fetchStats()
-        } catch {
-            setError('Failed to update vote.')
-            setEditingVote(null)
-        }
-    }
-
-    const handleConfirmDelete = async () => {
-        if (!deletingVote) return
-        setError(null)
-        try {
-            const res = await fetch(`${VOTES_API}/${deletingVote.userId}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            })
-            if (!res.ok && res.status !== 404) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to remove vote.')
-            }
-            setDeletingVote(null)
-            await fetchVotes(page, tab)
-            await fetchStats()
-        } catch {
-            setError('Failed to remove vote.')
-            setDeletingVote(null)
-        }
-    }
+    const data = useVotesData()
+    const actions = useVoteActions(data.refresh)
 
     return (
         <div className="voting-options-page">
             <h1>Overview</h1>
 
-            {stats && <OverviewCharts stats={stats} />}
+            {data.stats && <OverviewCharts stats={data.stats} />}
 
-            <OverviewTabs activeTab={tab} onTabChange={handleTabChange} />
+            <OverviewTabs activeTab={data.tab} onTabChange={data.changeTab} />
 
-            {error && <p className="voting-options-error">{error}</p>}
+            {(data.error || actions.error) && (
+                <p className="voting-options-error">{data.error ?? actions.error}</p>
+            )}
 
-            {isLoading ? (
+            {data.isLoading ? (
                 <p>Loading...</p>
             ) : (
                 <VotesTable
-                    votes={votes}
-                    tab={tab}
-                    page={page}
-                    totalPages={totalPages}
-                    onEdit={setEditingVote}
-                    onDelete={setDeletingVote}
-                    onPageChange={(newPage) => fetchVotes(newPage, tab)}
+                    votes={data.votes}
+                    tab={data.tab}
+                    page={data.page}
+                    totalPages={data.totalPages}
+                    onEdit={actions.startEdit}
+                    onDelete={actions.startDelete}
+                    onPageChange={data.goToPage}
                 />
             )}
 
-            {editingVote && (
+            {actions.editingVote && (
                 <EditVoteDialog
-                    options={options}
-                    initialOptionId={editingVote.votingOptionId ?? ''}
-                    onSave={handleEditSave}
-                    onCancel={() => setEditingVote(null)}
+                    options={data.options}
+                    initialOptionId={actions.editingVote.votingOptionId ?? ''}
+                    onSave={actions.confirmEdit}
+                    onCancel={actions.cancelEdit}
                 />
             )}
 
-            {deletingVote && (
+            {actions.deletingVote && (
                 <ConfirmDialog
                     title="Remove vote"
-                    message={`Are you sure you want to remove ${deletingVote.email}'s vote?`}
+                    message={`Are you sure you want to remove ${actions.deletingVote.email}'s vote?`}
                     confirmLabel="Remove"
-                    onConfirm={handleConfirmDelete}
-                    onCancel={() => setDeletingVote(null)}
+                    onConfirm={actions.confirmDelete}
+                    onCancel={actions.cancelDelete}
                 />
             )}
         </div>
