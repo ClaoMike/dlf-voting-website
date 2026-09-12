@@ -1,14 +1,14 @@
 using DlfVoting.Domain;
 using DlfVoting.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 
 namespace DlfVoting.Api.Tests;
 
+// ReSharper disable once ClassWithDisposableFieldNotDisposable
 public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
 {
-    protected readonly TestWebApplicationFactory Factory;
+    protected TestWebApplicationFactory Factory { get; }
     private readonly DatabaseFixture _dbFixture = new();
 
     protected const string AdminEmail = "test-admin@example.com";
@@ -16,7 +16,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
 
     protected const string UserEmail = "test-user@example.com";
     protected const string UserPassword = "correct-horse-battery-staple-1!";
-    
+
     // ReSharper disable once ConvertToPrimaryConstructor
     protected IntegrationTestBase(TestWebApplicationFactory factory)
     {

@@ -343,7 +343,7 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         // The only two valid outcomes: New Option survived (create ran after delete-all),
         // or the list is empty (delete-all ran after create and wiped it too).
         Assert.True(
-            options!.Count == 0 || (options.Count == 1 && options[0].Name == "New Option"),
+            options!.Count == 0 || options is [{ Name: "New Option" }],
             $"Unexpected state: {string.Join(", ", options.Select(o => o.Name))}");
     }
 

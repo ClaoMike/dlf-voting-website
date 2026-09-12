@@ -96,8 +96,8 @@ public class MultiSessionTests : IntegrationTestBase
 
         using (var scope = Factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<DlfVoting.Infrastructure.DlfVotingDbContext>();
-            db.Administrators.Add(new DlfVoting.Domain.Administrator
+            var db = scope.ServiceProvider.GetRequiredService<Infrastructure.DlfVotingDbContext>();
+            db.Administrators.Add(new Domain.Administrator
             {
                 Id = Guid.NewGuid(),
                 Email = secondAdminEmail,
@@ -140,8 +140,8 @@ public class MultiSessionTests : IntegrationTestBase
 
         using (var scope = Factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<DlfVoting.Infrastructure.DlfVotingDbContext>();
-            db.Users.Add(new DlfVoting.Domain.User
+            var db = scope.ServiceProvider.GetRequiredService<Infrastructure.DlfVotingDbContext>();
+            db.Users.Add(new Domain.User
             {
                 Id = Guid.NewGuid(),
                 Email = secondUserEmail,
@@ -175,8 +175,8 @@ public class MultiSessionTests : IntegrationTestBase
 
         using (var scope = Factory.Services.CreateScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<DlfVoting.Infrastructure.DlfVotingDbContext>();
-            db.Users.Add(new DlfVoting.Domain.User
+            var db = scope.ServiceProvider.GetRequiredService<Infrastructure.DlfVotingDbContext>();
+            db.Users.Add(new Domain.User
             {
                 Id = Guid.NewGuid(),
                 Email = secondUserEmail,

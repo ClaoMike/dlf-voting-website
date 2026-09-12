@@ -150,6 +150,8 @@ public class AdministratorsControllerTests : IntegrationTestBase
         Assert.Equal(AdminEmail, body!.Items[0].Email);
     }
 
+    private static readonly string[] ExpectedNonCurrentAdminOrder = ["aaa-second@example.com", "zzz-third@example.com"];
+
     [Fact]
     public async Task GetPage_NonCurrentAdmins_AreSortedAlphabeticallyAfterCurrent()
     {
@@ -161,7 +163,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var body = await response.Content.ReadFromJsonAsync<PagedAdministratorsResponseDto>();
 
         var rest = body!.Items.Skip(1).Select(a => a.Email).ToList();
-        Assert.Equal(new[] { "aaa-second@example.com", "zzz-third@example.com" }, rest);
+        Assert.Equal(ExpectedNonCurrentAdminOrder, rest);
     }
 
     [Fact]
@@ -257,7 +259,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
     {
         // Admin B editing Admin A's account (not their own) must work fine —
         // the self-protection is per-session, not a blanket rule on any specific account.
-        var adminAClient = await CreateAuthenticatedClientAsync();
+        await CreateAuthenticatedClientAsync();
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
         var adminAId = (await db.Administrators.FirstAsync(a => a.Email == AdminEmail)).Id;
@@ -412,7 +414,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         // Admin A tries to delete Admin B while, at the same instant, Admin B tries to
         // delete themselves (which must always be blocked regardless of timing).
         var adminAClient = await CreateAuthenticatedClientAsync();
-        var adminBEmail = "self-delete-race-target@example.com";
+        const string adminBEmail = "self-delete-race-target@example.com";
         var adminBClient = await CreateSecondAdminAndLoginAsync(adminBEmail, ValidPassword);
 
         using var scope = Factory.Services.CreateScope();
@@ -421,7 +423,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
         var taskFromA = adminAClient.DeleteAsync($"/api/administrators/{adminBId}");
         var taskFromBOnSelf = adminBClient.DeleteAsync($"/api/administrators/{adminBId}");
-        var responses = await Task.WhenAll(taskFromA, taskFromBOnSelf);
+        await Task.WhenAll(taskFromA, taskFromBOnSelf);
 
         // B's self-delete attempt must always be 403, regardless of what A's request does.
         var bResponse = await taskFromBOnSelf;
@@ -551,8 +553,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
     {
         var adminAClient = await CreateAuthenticatedClientAsync();
         const string adminBEmail = "concurrent-self-change-b@example.com";
-        const string adminBOriginalPassword = ValidPassword;
-        var adminBClient = await CreateSecondAdminAndLoginAsync(adminBEmail, adminBOriginalPassword);
+        var adminBClient = await CreateSecondAdminAndLoginAsync(adminBEmail, ValidPassword);
 
         const string adminANewPassword = "AdminAConcurrentNew1!@#";
         const string adminBNewPassword = "AdminBConcurrentNew1!@#";

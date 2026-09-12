@@ -10,6 +10,8 @@ namespace DlfVoting.Api.Tests.Tests;
 public class VoteStatsControllerTests : IntegrationTestBase
 {
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
+    // ReSharper disable once ClassNeverInstantiated.Local
+    // ReSharper disable once NotAccessedPositionalProperty.Local
     private record OptionVoteCountDto(Guid VotingOptionId, string VotingOptionName, int Count);
     private record VoteStatsResponseDto(int TotalUsers, int VotedUsers, List<OptionVoteCountDto> OptionCounts);
     
@@ -18,7 +20,7 @@ public class VoteStatsControllerTests : IntegrationTestBase
     {
     }
 
-    private async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
+    private static async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
     {
         var response = await adminClient.PostAsJsonAsync("/api/voting-options", new { name });
         response.EnsureSuccessStatusCode();

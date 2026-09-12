@@ -410,7 +410,7 @@ public class UsersControllerTests : IntegrationTestBase
 
     // --- Bulk import ---
 
-    private static HttpContent BuildCsvFileContent(string csvContent)
+    private static MultipartFormDataContent BuildCsvFileContent(string csvContent)
     {
         var multipart = new MultipartFormDataContent();
         var byteContent = new ByteArrayContent(Encoding.UTF8.GetBytes(csvContent));

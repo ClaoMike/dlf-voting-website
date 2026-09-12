@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DlfVoting.Api.Tests;
 
+// ReSharper disable once ClassNeverInstantiated.Global
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     public const string TestConnectionString =

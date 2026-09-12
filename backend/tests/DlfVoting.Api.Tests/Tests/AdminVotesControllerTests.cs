@@ -10,16 +10,17 @@ namespace DlfVoting.Api.Tests.Tests;
 public class AdminVotesControllerTests : IntegrationTestBase
 {
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
+    // ReSharper disable once ClassNeverInstantiated.Local
+    // ReSharper disable once NotAccessedPositionalProperty.Local
     private record AdminVoteResponseDto(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     private record PagedVotesResponseDto(List<AdminVoteResponseDto> Items, int TotalCount, int Page, int PageSize);
-    private record MyVoteResponseDto(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     
     // ReSharper disable once ConvertToPrimaryConstructor
     public AdminVotesControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
 
-    private async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
+    private static async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
     {
         var response = await adminClient.PostAsJsonAsync("/api/voting-options", new { name });
         response.EnsureSuccessStatusCode();
@@ -396,7 +397,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var responses = await Task.WhenAll(task1, task2);
 
         Assert.All(responses, r =>
-            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
 
         using var verifyScope = Factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
@@ -430,7 +431,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     public async Task GetAllPaged_OnlyVotedFalse_IsSameAsDefault()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Explicit False Option");
+        await CreateVotingOptionAsync(adminClient, "Explicit False Option");
         await CreateAndLoginUserAsync("explicit-false-nonvoter@example.com", "SomeValidPassword1!@#");
 
         var defaultResponse = await adminClient.GetAsync("/api/votes");

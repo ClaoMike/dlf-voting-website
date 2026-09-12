@@ -221,8 +221,8 @@ public class VotesControllerTests : IntegrationTestBase
     public async Task TwoDifferentUsers_CanVoteForTheSameOption()
     {
         var optionId = await CreateVotingOptionAsync("Popular Choice");
-        var (user1Id, client1) = await CreateAndLoginUserAsync("voter1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("voter2@example.com", "SomeValidPassword2!@#");
+        var (_, client1) = await CreateAndLoginUserAsync("voter1@example.com", "SomeValidPassword1!@#");
+        var (_, client2) = await CreateAndLoginUserAsync("voter2@example.com", "SomeValidPassword2!@#");
 
         var response1 = await client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         var response2 = await client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
@@ -268,7 +268,7 @@ public class VotesControllerTests : IntegrationTestBase
 
         // Every response must be either a success or a clean conflict — never an unhandled error.
         Assert.All(responses, r =>
-            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
         Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
 
         var voteCount = await GetVoteCountForUserAsync(userId);
@@ -290,7 +290,7 @@ public class VotesControllerTests : IntegrationTestBase
         var responses = await Task.WhenAll(task1, task2);
 
         Assert.All(responses, r =>
-            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
         Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
 
         var voteCount = await GetVoteCountForUserAsync(userId);
@@ -377,7 +377,7 @@ public class VotesControllerTests : IntegrationTestBase
             client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA }),
             client3.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB }),
             client4.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB }),
-            client5.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA }),
+            client5.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA })
         };
         var responses = await Task.WhenAll(tasks);
 

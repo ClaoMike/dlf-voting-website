@@ -24,7 +24,7 @@ public class VotingSettingsTests : IntegrationTestBase
         response.EnsureSuccessStatusCode();
     }
 
-    private async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
+    private static async Task<Guid> CreateVotingOptionAsync(HttpClient adminClient, string name)
     {
         var response = await adminClient.PostAsJsonAsync("/api/voting-options", new { name });
         response.EnsureSuccessStatusCode();

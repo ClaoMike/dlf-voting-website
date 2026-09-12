@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using DlfVoting.Domain;
 using DlfVoting.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DlfVoting.Api.Tests.Tests;
@@ -102,7 +101,6 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Me_AfterLogin_ReturnsAdminEmail()
     {
-        var handler = new HttpClientHandler { UseCookies = true, CookieContainer = new System.Net.CookieContainer() };
         var client = _factory.CreateDefaultClient();
         client.DefaultRequestHeaders.Add("Cookie", await LoginAndGetCookieAsync());
 

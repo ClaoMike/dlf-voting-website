@@ -5,7 +5,7 @@ using Respawn;
 
 namespace DlfVoting.Api.Tests;
 
-public class DatabaseFixture : IAsyncLifetime
+public class DatabaseFixture : IAsyncLifetime, IAsyncDisposable
 {
     private Respawner _respawner = null!;
     private NpgsqlConnection _connection = null!;
@@ -37,8 +37,15 @@ public class DatabaseFixture : IAsyncLifetime
         await _respawner.ResetAsync(_connection);
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
+    {
+        return ((IAsyncDisposable)this).DisposeAsync().AsTask();
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
     {
         await _connection.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
+    
 }
