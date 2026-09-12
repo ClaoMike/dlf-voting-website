@@ -5,7 +5,9 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+// ReSharper disable ClassNeverInstantiated.Local
+
+namespace DlfVoting.Api.Tests.Tests;
 
 public class UsersControllerTests : IntegrationTestBase
 {
@@ -14,6 +16,7 @@ public class UsersControllerTests : IntegrationTestBase
 
     private const string ValidPassword = "ValidPassword1234!@#$";
 
+    // ReSharper disable once ConvertToPrimaryConstructor
     public UsersControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
@@ -358,9 +361,7 @@ public class UsersControllerTests : IntegrationTestBase
         var deleteResponse = await deleteTask;
 
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
-        Assert.True(
-            updateResponse.StatusCode == HttpStatusCode.OK ||
-            updateResponse.StatusCode == HttpStatusCode.NotFound);
+        Assert.True(updateResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.NotFound);
 
         var listResponse = await client.GetAsync("/api/users");
         var body = await listResponse.Content.ReadFromJsonAsync<PagedUsersResponseDto>();
@@ -403,10 +404,10 @@ public class UsersControllerTests : IntegrationTestBase
         var body = await listResponse.Content.ReadFromJsonAsync<PagedUsersResponseDto>();
 
         Assert.True(
-            body!.Items.Count == 0 || (body.Items.Count == 1 && body.Items[0].Email == "brandnew@example.com"),
+            body!.Items is [] or [{ Email: "brandnew@example.com" }],
             $"Unexpected state: {string.Join(", ", body.Items.Select(u => u.Email))}");
     }
-    
+
     // --- Bulk import ---
 
     private static HttpContent BuildCsvFileContent(string csvContent)
@@ -426,7 +427,8 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithoutAuth_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
-        var content = BuildCsvFileContent("email\na@example.com");
+        const string csv = "email\na@example.com";
+        var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
 
@@ -448,7 +450,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithValidEmails_CreatesAllUsersWithGeneratedPasswords()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "email\nbulk1@example.com\nbulk2@example.com\nbulk3@example.com";
+        const string csv = "email\nbulk1@example.com\nbulk2@example.com\nbulk3@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
@@ -481,7 +483,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithoutHeaderRow_StillWorks()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "noheader1@example.com\nnoheader2@example.com";
+        const string csv = "noheader1@example.com\nnoheader2@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
@@ -494,14 +496,14 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithDuplicateEmailWithinFile_CreatesOneAndSkipsRest()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "email\ndup-in-file@example.com\ndup-in-file@example.com\ndup-in-file@example.com";
+        const string csv = "email\ndup-in-file@example.com\ndup-in-file@example.com\ndup-in-file@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "dup-in-file@example.com");
-        Assert.Equal(2, body.Skipped.Count(s => s.Email == "dup-in-file@example.com" && s.Reason == "Duplicate in file"));
+        Assert.Equal(2, body.Skipped.Count(s => s is { Email: "dup-in-file@example.com", Reason: "Duplicate in file" }));
     }
 
     [Fact]
@@ -510,35 +512,35 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         await client.PostAsJsonAsync("/api/users", new { email = "already-exists@example.com", password = "SomeValidPassword1!@#" });
 
-        var csv = "email\nalready-exists@example.com\nbrand-new@example.com";
+        const string csv = "email\nalready-exists@example.com\nbrand-new@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "brand-new@example.com");
-        Assert.Single(body.Skipped, s => s.Email == "already-exists@example.com" && s.Reason == "Already exists");
+        Assert.Single(body.Skipped, s => s is { Email: "already-exists@example.com", Reason: "Already exists" });
     }
 
     [Fact]
     public async Task BulkImport_WithInvalidEmailFormat_SkipsItWithCorrectReason()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "email\nnot-an-email\nvalid-one@example.com";
+        const string csv = "email\nnot-an-email\nvalid-one@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "valid-one@example.com");
-        Assert.Single(body.Skipped, s => s.Email == "not-an-email" && s.Reason == "Invalid email format");
+        Assert.Single(body.Skipped, s => s is { Email: "not-an-email", Reason: "Invalid email format" });
     }
 
     [Fact]
     public async Task BulkImport_WithBlankLinesInFile_IgnoresThem()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "email\n\nblank-line-test@example.com\n\n";
+        const string csv = "email\n\nblank-line-test@example.com\n\n";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
@@ -548,21 +550,23 @@ public class UsersControllerTests : IntegrationTestBase
         Assert.Empty(body.Skipped);
     }
 
+    private static readonly string[] MixOfValidDuplicateAndInvalidLines =
+    [
+        "email",
+        "mix-new-1@example.com",
+        "mix-new-2@example.com",
+        "mix-existing@example.com",
+        "mix-new-1@example.com", // duplicate of a valid new one
+        "not-valid-email"
+    ];
+
     [Fact]
     public async Task BulkImport_MixOfValidDuplicateAndInvalid_HandlesEachCorrectly()
     {
         var client = await CreateAuthenticatedClientAsync();
         await client.PostAsJsonAsync("/api/users", new { email = "mix-existing@example.com", password = "SomeValidPassword1!@#" });
 
-        var csv = string.Join('\n', new[]
-        {
-            "email",
-            "mix-new-1@example.com",
-            "mix-new-2@example.com",
-            "mix-existing@example.com",
-            "mix-new-1@example.com", // duplicate of a valid new one
-            "not-valid-email",
-        });
+        var csv = string.Join('\n', MixOfValidDuplicateAndInvalidLines);
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
@@ -573,16 +577,16 @@ public class UsersControllerTests : IntegrationTestBase
         Assert.Contains(body.Created, c => c.Email == "mix-new-2@example.com");
 
         Assert.Equal(3, body.Skipped.Count);
-        Assert.Contains(body.Skipped, s => s.Email == "mix-existing@example.com" && s.Reason == "Already exists");
-        Assert.Contains(body.Skipped, s => s.Email == "mix-new-1@example.com" && s.Reason == "Duplicate in file");
-        Assert.Contains(body.Skipped, s => s.Email == "not-valid-email" && s.Reason == "Invalid email format");
+        Assert.Contains(body.Skipped, s => s is { Email: "mix-existing@example.com", Reason: "Already exists" });
+        Assert.Contains(body.Skipped, s => s is { Email: "mix-new-1@example.com", Reason: "Duplicate in file" });
+        Assert.Contains(body.Skipped, s => s is { Email: "not-valid-email", Reason: "Invalid email format" });
     }
 
     [Fact]
     public async Task BulkImport_GeneratedPasswords_AreAllDifferentFromEachOther()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var csv = "email\nunique-pw-1@example.com\nunique-pw-2@example.com\nunique-pw-3@example.com";
+        const string csv = "email\nunique-pw-1@example.com\nunique-pw-2@example.com\nunique-pw-3@example.com";
         var content = BuildCsvFileContent(csv);
 
         var response = await client.PostAsync("/api/users/bulk-import", content);
@@ -600,15 +604,14 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
 
         // Two files share one overlapping email, each also has a unique one of its own.
-        var csv1 = "email\nrace-shared@example.com\nrace-file1-only@example.com";
-        var csv2 = "email\nrace-shared@example.com\nrace-file2-only@example.com";
+        const string csv1 = "email\nrace-shared@example.com\nrace-file1-only@example.com";
+        const string csv2 = "email\nrace-shared@example.com\nrace-file2-only@example.com";
 
         var task1 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv1));
         var task2 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv2));
         var responses = await Task.WhenAll(task1, task2);
 
-        Assert.All(responses, r =>
-            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+        Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
 
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
@@ -623,8 +626,8 @@ public class UsersControllerTests : IntegrationTestBase
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        var csv1 = "email\ndisjoint-a1@example.com\ndisjoint-a2@example.com";
-        var csv2 = "email\ndisjoint-b1@example.com\ndisjoint-b2@example.com";
+        const string csv1 = "email\ndisjoint-a1@example.com\ndisjoint-a2@example.com";
+        const string csv2 = "email\ndisjoint-b1@example.com\ndisjoint-b2@example.com";
 
         var task1 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv1));
         var task2 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv2));
@@ -638,5 +641,4 @@ public class UsersControllerTests : IntegrationTestBase
         Assert.Equal(2, body1!.Created.Count);
         Assert.Equal(2, body2!.Created.Count);
     }
-
 }

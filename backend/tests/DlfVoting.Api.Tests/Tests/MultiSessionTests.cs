@@ -2,10 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class MultiSessionTests : IntegrationTestBase
-{
+{   
+    // ReSharper disable once ConvertToPrimaryConstructor
     public MultiSessionTests(TestWebApplicationFactory factory) : base(factory)
     {
     }

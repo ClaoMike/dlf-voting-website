@@ -5,13 +5,14 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class VotesControllerTests : IntegrationTestBase
 {
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
     private record MyVoteResponseDto(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public VotesControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
@@ -27,22 +28,20 @@ public class VotesControllerTests : IntegrationTestBase
 
     private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string email, string password)
     {
-        using (var scope = Factory.Services.CreateScope())
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+        var user = new User
         {
-            var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                CreatedAt = DateTime.UtcNow
-            };
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
+            Id = Guid.NewGuid(),
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
 
-            var client = await CreateAuthenticatedUserClientAsync(email, password);
-            return (user.Id, client);
-        }
+        var client = await CreateAuthenticatedUserClientAsync(email, password);
+        return (user.Id, client);
     }
 
     private async Task<int> GetVoteCountForUserAsync(Guid userId)

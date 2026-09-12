@@ -5,14 +5,15 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class VoteStatsControllerTests : IntegrationTestBase
 {
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
     private record OptionVoteCountDto(Guid VotingOptionId, string VotingOptionName, int Count);
     private record VoteStatsResponseDto(int TotalUsers, int VotedUsers, List<OptionVoteCountDto> OptionCounts);
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public VoteStatsControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }

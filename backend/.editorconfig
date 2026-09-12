@@ -1,0 +1,13 @@
+root = true
+
+# Test method names follow the Method_Scenario_ExpectedResult convention,
+# so underscore-based naming rules are turned off for the test projects.
+[tests/**/*.cs]
+
+# CA1707: Identifiers should not contain underscores
+# ("Remove the underscores from member name ...")
+dotnet_diagnostic.CA1707.severity = none
+
+# ReSharper/Rider naming inspections
+resharper_inconsistent_naming_highlighting = none
+dotnet_diagnostic.IDE1006.severity = none

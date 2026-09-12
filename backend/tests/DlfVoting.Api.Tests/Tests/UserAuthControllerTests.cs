@@ -1,10 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class UserAuthControllerTests : IntegrationTestBase
 {
+    // ReSharper disable once ConvertToPrimaryConstructor
     public UserAuthControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }

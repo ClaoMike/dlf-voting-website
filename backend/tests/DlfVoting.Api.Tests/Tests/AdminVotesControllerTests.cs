@@ -5,7 +5,7 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class AdminVotesControllerTests : IntegrationTestBase
 {
@@ -13,7 +13,8 @@ public class AdminVotesControllerTests : IntegrationTestBase
     private record AdminVoteResponseDto(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     private record PagedVotesResponseDto(List<AdminVoteResponseDto> Items, int TotalCount, int Page, int PageSize);
     private record MyVoteResponseDto(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public AdminVotesControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
@@ -301,7 +302,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var responses = await Task.WhenAll(userTask, adminTask);
 
         Assert.All(responses, r =>
-            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
 
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
@@ -323,12 +324,9 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var deleteResponse = await deleteTask;
 
         Assert.True(
-            editResponse.StatusCode == HttpStatusCode.OK ||
-            editResponse.StatusCode == HttpStatusCode.NotFound ||
-            editResponse.StatusCode == HttpStatusCode.Conflict);
+            editResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.NotFound or HttpStatusCode.Conflict);
         Assert.True(
-            deleteResponse.StatusCode == HttpStatusCode.NoContent ||
-            deleteResponse.StatusCode == HttpStatusCode.NotFound);
+            deleteResponse.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound);
 
         // Whatever order the race resolved in, there must be at most one row and no crash.
         using var scope = Factory.Services.CreateScope();

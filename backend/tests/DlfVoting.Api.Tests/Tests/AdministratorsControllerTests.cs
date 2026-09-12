@@ -5,7 +5,7 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class AdministratorsControllerTests : IntegrationTestBase
 {
@@ -13,7 +13,8 @@ public class AdministratorsControllerTests : IntegrationTestBase
     private record PagedAdministratorsResponseDto(List<AdministratorResponseDto> Items, int TotalCount, int Page, int PageSize);
 
     private const string ValidPassword = "ValidPassword1234!@#$";
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public AdministratorsControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
@@ -379,8 +380,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         Assert.True(
-            updateResponse.StatusCode == HttpStatusCode.OK ||
-            updateResponse.StatusCode == HttpStatusCode.NotFound);
+            updateResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.NotFound);
 
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();

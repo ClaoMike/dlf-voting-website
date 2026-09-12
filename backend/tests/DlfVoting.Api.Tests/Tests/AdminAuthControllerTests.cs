@@ -5,7 +5,7 @@ using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>, IAsyncLifetime
 {
@@ -14,7 +14,8 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
 
     private const string TestEmail = "test-admin@example.com";
     private const string TestPassword = "correct-horse-battery";
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public AdminAuthControllerTests(TestWebApplicationFactory factory)
     {
         _factory = factory;

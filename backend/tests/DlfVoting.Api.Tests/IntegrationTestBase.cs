@@ -16,7 +16,8 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
 
     protected const string UserEmail = "test-user@example.com";
     protected const string UserPassword = "correct-horse-battery-staple-1!";
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     protected IntegrationTestBase(TestWebApplicationFactory factory)
     {
         Factory = factory;

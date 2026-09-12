@@ -1,12 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 
-namespace DlfVoting.Api.Tests;
+namespace DlfVoting.Api.Tests.Tests;
 
 public class VotingOptionsControllerTests : IntegrationTestBase
 {
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public VotingOptionsControllerTests(TestWebApplicationFactory factory) : base(factory)
     {
     }
@@ -290,8 +291,7 @@ public class VotingOptionsControllerTests : IntegrationTestBase
         // the only question is whether the update landed before or after it.
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         Assert.True(
-            updateResponse.StatusCode == HttpStatusCode.OK ||
-            updateResponse.StatusCode == HttpStatusCode.NotFound,
+            updateResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.NotFound,
             $"Unexpected update status: {updateResponse.StatusCode}");
 
         // Whichever way the race went, the row must no longer exist afterward.
