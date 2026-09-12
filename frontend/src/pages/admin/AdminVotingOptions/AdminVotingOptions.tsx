@@ -1,233 +1,71 @@
-import { useEffect, useState } from 'react'
 import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import EditNameDialog from '../../../components/EditNameDialog'
+import AddOptionRow from './AddOptionRow'
+import VotingOptionsTable from './VotingOptionsTable'
+import { useVotingOptionsData } from './useVotingOptionsData'
+import { useVotingOptionActions } from './useVotingOptionActions'
 
 import './AdminVotingOptions.css'
 
-type VotingOption = {
-    id: string
-    name: string
-    createdAt: string
-}
-
-const API_BASE = 'http://localhost:5120/api/voting-options'
-
 function AdminVotingOptions() {
-    const [options, setOptions] = useState<VotingOption[]>([])
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const data = useVotingOptionsData()
+    const actions = useVotingOptionActions(data.fetchOptions)
 
-    const [newName, setNewName] = useState('')
-    const [isAdding, setIsAdding] = useState(false)
-
-    const [editingOption, setEditingOption] = useState<VotingOption | null>(null)
-    const [deletingOption, setDeletingOption] = useState<VotingOption | null>(null)
-    const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false)
-
-    const fetchOptions = async () => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const res = await fetch(API_BASE, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load voting options.')
-            const data = await res.json()
-            setOptions(data)
-        } catch {
-            setError('Could not load voting options.')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchOptions()
-    }, [])
-
-    const handleAdd = async () => {
-        const trimmed = newName.trim()
-        if (!trimmed) return
-
-        setIsAdding(true)
-        setError(null)
-        try {
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name: trimmed }),
-            })
-
-            if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to add voting option.')
-                return
-            }
-
-            setNewName('')
-            await fetchOptions()
-        } finally {
-            setIsAdding(false)
-        }
-    }
-
-    const handleSaveEdit = async (newValue: string) => {
-        if (!editingOption) return
-
-        setError(null)
-        try {
-            const res = await fetch(`${API_BASE}/${editingOption.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name: newValue }),
-            })
-
-            if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to update voting option.')
-                setEditingOption(null)
-                return
-            }
-
-            setEditingOption(null)
-            await fetchOptions()
-        } catch {
-            setError('Failed to update voting option.')
-            setEditingOption(null)
-        }
-    }
-
-    const handleConfirmDelete = async () => {
-        if (!deletingOption) return
-
-        setError(null)
-        try {
-            const res = await fetch(`${API_BASE}/${deletingOption.id}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            })
-
-            if (!res.ok && res.status !== 404) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to delete voting option.')
-            }
-
-            setDeletingOption(null)
-            await fetchOptions()
-        } catch {
-            setError('Failed to delete voting option.')
-            setDeletingOption(null)
-        }
-    }
-
-    const handleConfirmRemoveAll = async () => {
-        setError(null)
-        try {
-            const res = await fetch(API_BASE, {
-                method: 'DELETE',
-                credentials: 'include',
-            })
-
-            if (!res.ok) {
-                setError('Failed to remove all voting options.')
-            }
-
-            setShowRemoveAllConfirm(false)
-            await fetchOptions()
-        } catch {
-            setError('Failed to remove all voting options.')
-            setShowRemoveAllConfirm(false)
-        }
-    }
+    const displayedError = data.error ?? actions.error
 
     return (
         <div className="voting-options-page">
             <h1>Voting Options</h1>
 
-            <div className="voting-options-add-row">
-                <input
-                    type="text"
-                    placeholder="New voting option name"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                />
-                <button
-                    disabled={!newName.trim() || isAdding}
-                    onClick={handleAdd}
-                >
-                    Add option
-                </button>
-            </div>
+            <AddOptionRow
+                newName={actions.newName}
+                onNameChange={actions.setNewName}
+                isAdding={actions.isAdding}
+                onAdd={actions.add}
+            />
 
             <button
                 className="voting-options-remove-all"
-                disabled={options.length === 0}
-                onClick={() => setShowRemoveAllConfirm(true)}
+                disabled={data.options.length === 0}
+                onClick={actions.openRemoveAllConfirm}
             >
                 Remove all
             </button>
 
-            {error && <p className="voting-options-error">{error}</p>}
+            {displayedError && <p className="voting-options-error">{displayedError}</p>}
 
-            {isLoading ? (
+            {data.isLoading ? (
                 <p>Loading...</p>
             ) : (
-                <table className="voting-options-table">
-                    <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Created</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {options.map((option) => (
-                        <tr key={option.id}>
-                            <td>{option.name}</td>
-                            <td>{new Date(option.createdAt).toLocaleDateString()}</td>
-                            <td className="voting-options-actions">
-                                <button className="voting-options-edit" onClick={() => setEditingOption(option)}>
-                                    Edit
-                                </button>
-                                <button
-                                    className="voting-options-remove"
-                                    onClick={() => setDeletingOption(option)}
-                                >
-                                    Remove
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
+                <VotingOptionsTable options={data.options} onEdit={actions.startEdit} onDelete={actions.startDelete} />
             )}
 
-            {editingOption && (
+            {actions.editingOption && (
                 <EditNameDialog
                     title="Edit voting option"
-                    initialValue={editingOption.name}
-                    onSave={handleSaveEdit}
-                    onCancel={() => setEditingOption(null)}
+                    initialValue={actions.editingOption.name}
+                    onSave={actions.saveEdit}
+                    onCancel={actions.cancelEdit}
                 />
             )}
 
-            {deletingOption && (
+            {actions.deletingOption && (
                 <ConfirmDialog
                     title="Remove voting option"
-                    message={`Are you sure you want to remove "${deletingOption.name}"?`}
+                    message={`Are you sure you want to remove "${actions.deletingOption.name}"?`}
                     confirmLabel="Remove"
-                    onConfirm={handleConfirmDelete}
-                    onCancel={() => setDeletingOption(null)}
+                    onConfirm={actions.confirmDelete}
+                    onCancel={actions.cancelDelete}
                 />
             )}
 
-            {showRemoveAllConfirm && (
+            {actions.showRemoveAllConfirm && (
                 <ConfirmDialog
                     title="Remove all voting options"
                     message="Are you sure you want to remove all voting options? This cannot be undone."
                     confirmLabel="Remove all"
-                    onConfirm={handleConfirmRemoveAll}
-                    onCancel={() => setShowRemoveAllConfirm(false)}
+                    onConfirm={actions.confirmRemoveAll}
+                    onCancel={actions.cancelRemoveAllConfirm}
                 />
             )}
         </div>
