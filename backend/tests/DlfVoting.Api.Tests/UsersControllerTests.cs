@@ -1,5 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using DlfVoting.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DlfVoting.Api.Tests;
 
@@ -402,4 +406,237 @@ public class UsersControllerTests : IntegrationTestBase
             body!.Items.Count == 0 || (body.Items.Count == 1 && body.Items[0].Email == "brandnew@example.com"),
             $"Unexpected state: {string.Join(", ", body.Items.Select(u => u.Email))}");
     }
+    
+    // --- Bulk import ---
+
+    private static HttpContent BuildCsvFileContent(string csvContent)
+    {
+        var multipart = new MultipartFormDataContent();
+        var byteContent = new ByteArrayContent(Encoding.UTF8.GetBytes(csvContent));
+        byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
+        multipart.Add(byteContent, "file", "users.csv");
+        return multipart;
+    }
+
+    private record BulkImportedUserDto(string Email, string Password);
+    private record BulkImportSkippedEntryDto(string Email, string Reason);
+    private record BulkImportResponseDto(List<BulkImportedUserDto> Created, List<BulkImportSkippedEntryDto> Skipped);
+
+    [Fact]
+    public async Task BulkImport_WithoutAuth_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+        var content = BuildCsvFileContent("email\na@example.com");
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BulkImport_WithNoFile_ReturnsBadRequest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var content = new MultipartFormDataContent();
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BulkImport_WithValidEmails_CreatesAllUsersWithGeneratedPasswords()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "email\nbulk1@example.com\nbulk2@example.com\nbulk3@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Equal(3, body!.Created.Count);
+        Assert.Empty(body.Skipped);
+
+        foreach (var created in body.Created)
+        {
+            Assert.True(created.Password.Length >= 20);
+        }
+
+        // Confirm the returned passwords actually work for login.
+        foreach (var created in body.Created)
+        {
+            var loginClient = Factory.CreateClient();
+            var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/user/login", new
+            {
+                email = created.Email,
+                password = created.Password
+            });
+            Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task BulkImport_WithoutHeaderRow_StillWorks()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "noheader1@example.com\nnoheader2@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Equal(2, body!.Created.Count);
+    }
+
+    [Fact]
+    public async Task BulkImport_WithDuplicateEmailWithinFile_CreatesOneAndSkipsRest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "email\ndup-in-file@example.com\ndup-in-file@example.com\ndup-in-file@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Single(body!.Created, c => c.Email == "dup-in-file@example.com");
+        Assert.Equal(2, body.Skipped.Count(s => s.Email == "dup-in-file@example.com" && s.Reason == "Duplicate in file"));
+    }
+
+    [Fact]
+    public async Task BulkImport_WithEmailAlreadyInDatabase_SkipsItWithCorrectReason()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await client.PostAsJsonAsync("/api/users", new { email = "already-exists@example.com", password = "SomeValidPassword1!@#" });
+
+        var csv = "email\nalready-exists@example.com\nbrand-new@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Single(body!.Created, c => c.Email == "brand-new@example.com");
+        Assert.Single(body.Skipped, s => s.Email == "already-exists@example.com" && s.Reason == "Already exists");
+    }
+
+    [Fact]
+    public async Task BulkImport_WithInvalidEmailFormat_SkipsItWithCorrectReason()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "email\nnot-an-email\nvalid-one@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Single(body!.Created, c => c.Email == "valid-one@example.com");
+        Assert.Single(body.Skipped, s => s.Email == "not-an-email" && s.Reason == "Invalid email format");
+    }
+
+    [Fact]
+    public async Task BulkImport_WithBlankLinesInFile_IgnoresThem()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "email\n\nblank-line-test@example.com\n\n";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Single(body!.Created);
+        Assert.Empty(body.Skipped);
+    }
+
+    [Fact]
+    public async Task BulkImport_MixOfValidDuplicateAndInvalid_HandlesEachCorrectly()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await client.PostAsJsonAsync("/api/users", new { email = "mix-existing@example.com", password = "SomeValidPassword1!@#" });
+
+        var csv = string.Join('\n', new[]
+        {
+            "email",
+            "mix-new-1@example.com",
+            "mix-new-2@example.com",
+            "mix-existing@example.com",
+            "mix-new-1@example.com", // duplicate of a valid new one
+            "not-valid-email",
+        });
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Equal(2, body!.Created.Count);
+        Assert.Contains(body.Created, c => c.Email == "mix-new-1@example.com");
+        Assert.Contains(body.Created, c => c.Email == "mix-new-2@example.com");
+
+        Assert.Equal(3, body.Skipped.Count);
+        Assert.Contains(body.Skipped, s => s.Email == "mix-existing@example.com" && s.Reason == "Already exists");
+        Assert.Contains(body.Skipped, s => s.Email == "mix-new-1@example.com" && s.Reason == "Duplicate in file");
+        Assert.Contains(body.Skipped, s => s.Email == "not-valid-email" && s.Reason == "Invalid email format");
+    }
+
+    [Fact]
+    public async Task BulkImport_GeneratedPasswords_AreAllDifferentFromEachOther()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var csv = "email\nunique-pw-1@example.com\nunique-pw-2@example.com\nunique-pw-3@example.com";
+        var content = BuildCsvFileContent(csv);
+
+        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        var distinctPasswords = body!.Created.Select(c => c.Password).Distinct().Count();
+        Assert.Equal(body.Created.Count, distinctPasswords);
+    }
+
+    // --- Bulk import: concurrency ---
+
+    [Fact]
+    public async Task ConcurrentBulkImport_OverlappingFiles_NeverCreatesDuplicateAccountForSameEmail()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        // Two files share one overlapping email, each also has a unique one of its own.
+        var csv1 = "email\nrace-shared@example.com\nrace-file1-only@example.com";
+        var csv2 = "email\nrace-shared@example.com\nrace-file2-only@example.com";
+
+        var task1 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv1));
+        var task2 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv2));
+        var responses = await Task.WhenAll(task1, task2);
+
+        Assert.All(responses, r =>
+            Assert.True(r.StatusCode == HttpStatusCode.OK || r.StatusCode == HttpStatusCode.Conflict));
+
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+        var sharedCount = await db.Users.CountAsync(u => u.Email == "race-shared@example.com");
+
+        // Regardless of how the race resolved, the shared email must exist exactly once.
+        Assert.Equal(1, sharedCount);
+    }
+
+    [Fact]
+    public async Task ConcurrentBulkImport_CompletelyDisjointFiles_BothFullySucceed()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var csv1 = "email\ndisjoint-a1@example.com\ndisjoint-a2@example.com";
+        var csv2 = "email\ndisjoint-b1@example.com\ndisjoint-b2@example.com";
+
+        var task1 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv1));
+        var task2 = client.PostAsync("/api/users/bulk-import", BuildCsvFileContent(csv2));
+        var responses = await Task.WhenAll(task1, task2);
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+
+        var body1 = await responses[0].Content.ReadFromJsonAsync<BulkImportResponseDto>();
+        var body2 = await responses[1].Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Equal(2, body1!.Created.Count);
+        Assert.Equal(2, body2!.Created.Count);
+    }
+
 }
