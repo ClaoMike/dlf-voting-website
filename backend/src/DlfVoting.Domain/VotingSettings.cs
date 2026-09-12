@@ -2,7 +2,7 @@ namespace DlfVoting.Domain;
 
 public class VotingSettings
 {
-    public Guid Id { get; set; }
-    public bool IsVotingOpen { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public Guid Id { get; init; }
+    public bool IsVotingOpen { get; init; }
+    public DateTime UpdatedAt { get; init; }
 }

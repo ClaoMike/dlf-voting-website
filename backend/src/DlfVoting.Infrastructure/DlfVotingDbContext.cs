@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 namespace DlfVoting.Infrastructure;
 
 public class DlfVotingDbContext : DbContext
-{
+{   
+    // ReSharper disable once ConvertToPrimaryConstructor
     public DlfVotingDbContext(DbContextOptions<DlfVotingDbContext> options)
         : base(options)
     {

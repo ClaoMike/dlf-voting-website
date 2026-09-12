@@ -1,7 +1,6 @@
 using DlfVoting.Api;
 using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,4 +76,5 @@ app.MapControllers();
 
 app.Run();
 
-public partial class Program { }
+// ReSharper disable once ClassNeverInstantiated.Global
+public partial class Program;

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+// ReSharper disable NotAccessedPositionalProperty.Local
+
 namespace DlfVoting.Api.Controllers;
 
 [ApiController]
@@ -12,7 +14,8 @@ namespace DlfVoting.Api.Controllers;
 public class VotingOptionsController : ControllerBase
 {
     private readonly DlfVotingDbContext _db;
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public VotingOptionsController(DlfVotingDbContext db)
     {
         _db = db;
@@ -20,7 +23,7 @@ public class VotingOptionsController : ControllerBase
 
     public record CreateVotingOptionRequest(string Name);
     public record UpdateVotingOptionRequest(string Name);
-    public record VotingOptionResponse(Guid Id, string Name, DateTime CreatedAt);
+    private record VotingOptionResponse(Guid Id, string Name, DateTime CreatedAt);
 
     [HttpGet]
     [Authorize(AuthenticationSchemes = $"{AuthSchemes.Admin},{AuthSchemes.User}")]
@@ -38,7 +41,7 @@ public class VotingOptionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateVotingOptionRequest request)
     {
-        var name = request.Name?.Trim() ?? string.Empty;
+        var name = request.Name.Trim();
 
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -79,10 +82,10 @@ public class VotingOptionsController : ControllerBase
         return ex.InnerException is Npgsql.PostgresException { SqlState: "23505" };
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateVotingOptionRequest request)
     {
-        var name = request.Name?.Trim() ?? string.Empty;
+        var name = request.Name.Trim();
 
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -122,7 +125,7 @@ public class VotingOptionsController : ControllerBase
         return Ok(new VotingOptionResponse(option.Id, option.Name, option.CreatedAt));
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var option = await _db.VotingOptions.FindAsync(id);
@@ -145,12 +148,11 @@ public class VotingOptionsController : ControllerBase
 
         return NoContent();
     }
-    
+
     [HttpDelete]
     public async Task<IActionResult> DeleteAll()
     {
         await _db.VotingOptions.ExecuteDeleteAsync();
         return NoContent();
     }
-    
 }

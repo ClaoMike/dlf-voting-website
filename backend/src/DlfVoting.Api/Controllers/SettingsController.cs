@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+// ReSharper disable NotAccessedPositionalProperty.Local
+
 namespace DlfVoting.Api.Controllers;
 
 [ApiController]
@@ -11,13 +13,14 @@ public class SettingsController : ControllerBase
 {
     private readonly DlfVotingDbContext _db;
     private static readonly Guid SettingsRowId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public SettingsController(DlfVotingDbContext db)
     {
         _db = db;
     }
 
-    public record VotingStatusResponse(bool IsVotingOpen);
+    private record VotingStatusResponse(bool IsVotingOpen);
     public record UpdateVotingStatusRequest(bool IsVotingOpen);
 
     [HttpGet]

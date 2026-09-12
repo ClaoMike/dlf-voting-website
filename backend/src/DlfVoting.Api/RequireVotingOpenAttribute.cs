@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DlfVoting.Api;
 
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class RequireVotingOpenAttribute : Attribute, IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var isAdmin = context.HttpContext.User.Identities
-            .Any(i => i.AuthenticationType == AuthSchemes.Admin && i.IsAuthenticated);
+            .Any(i => i is { AuthenticationType: AuthSchemes.Admin, IsAuthenticated: true });
 
         if (isAdmin)
         {

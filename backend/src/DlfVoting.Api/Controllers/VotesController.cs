@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+// ReSharper disable NotAccessedPositionalProperty.Global
+// ReSharper disable NotAccessedPositionalProperty.Local
+
 namespace DlfVoting.Api.Controllers;
 
 [ApiController]
@@ -14,18 +17,22 @@ public class VotesController : ControllerBase
     private const int PageSize = 25;
 
     private readonly DlfVotingDbContext _db;
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public VotesController(DlfVotingDbContext db)
     {
         _db = db;
     }
 
     public record CastVoteRequest(Guid VotingOptionId);
-    public record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
-    public record AdminVoteResponse(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
-    public record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page, int PageSize);
-    public record OptionVoteCount(Guid VotingOptionId, string VotingOptionName, int Count);
-    public record VoteStatsResponse(int TotalUsers, int VotedUsers, List<OptionVoteCount> OptionCounts);
+    private record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
+    private record AdminVoteResponse(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
+    private record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page,
+        // ReSharper disable once MemberHidesStaticFromOuterClass
+        int PageSize);
+
+    private record OptionVoteCount(Guid VotingOptionId, string VotingOptionName, int Count);
+    private record VoteStatsResponse(int TotalUsers, int VotedUsers, List<OptionVoteCount> OptionCounts);
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -73,7 +80,7 @@ public class VotesController : ControllerBase
                 join u in _db.Users on v.UserId equals u.Id
                 join o in _db.VotingOptions on v.VotingOptionId equals o.Id
                 orderby u.Email
-                select new AdminVoteResponse(u.Id, u.Email, (Guid?)o.Id, o.Name, (DateTime?)v.UpdatedAt);
+                select new AdminVoteResponse(u.Id, u.Email, o.Id, o.Name, v.UpdatedAt);
         }
         else
         {
@@ -90,9 +97,9 @@ public class VotesController : ControllerBase
                 select new AdminVoteResponse(
                     u.Id,
                     u.Email,
-                    vi != null ? (Guid?)vi.OptionId : null,
+                    vi != null ? vi.OptionId : null,
                     vi != null ? vi.OptionName : null,
-                    vi != null ? (DateTime?)vi.UpdatedAt : null
+                    vi != null ? vi.UpdatedAt : null
                 );
         }
 
@@ -106,7 +113,7 @@ public class VotesController : ControllerBase
         return Ok(new PagedVotesResponse(items, totalCount, page, PageSize));
     }
 
-    [HttpPut("{userId}")]
+    [HttpPut("{userId:guid}")]
     [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
     public async Task<IActionResult> AdminSetVote(Guid userId, [FromBody] CastVoteRequest request)
     {
@@ -119,7 +126,7 @@ public class VotesController : ControllerBase
         return await UpsertVoteAsync(userId, request.VotingOptionId);
     }
 
-    [HttpDelete("{userId}")]
+    [HttpDelete("{userId:guid}")]
     [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
     public async Task<IActionResult> AdminDeleteVote(Guid userId)
     {
@@ -142,7 +149,7 @@ public class VotesController : ControllerBase
 
         return NoContent();
     }
-    
+
     [HttpGet("stats")]
     [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
     public async Task<IActionResult> GetStats()

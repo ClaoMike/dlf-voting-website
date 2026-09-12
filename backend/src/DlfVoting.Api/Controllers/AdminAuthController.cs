@@ -12,7 +12,8 @@ namespace DlfVoting.Api.Controllers;
 public class AdminAuthController : ControllerBase
 {
     private readonly DlfVotingDbContext _db;
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public AdminAuthController(DlfVotingDbContext db)
     {
         _db = db;

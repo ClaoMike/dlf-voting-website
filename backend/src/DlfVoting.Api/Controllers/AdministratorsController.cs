@@ -8,19 +8,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DlfVoting.Api.Controllers;
 
+// ReSharper disable ClassCanBeSealed.Global
+// ReSharper disable NotAccessedPositionalProperty.Global
+// ReSharper disable NotAccessedPositionalProperty.Local
 [ApiController]
 [Route("api/administrators")]
 [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
-public class AdministratorsController : ControllerBase
+public partial class AdministratorsController : ControllerBase
 {
     private const int PageSize = 25;
 
-    private static readonly Regex EmailRegex = new(@"^[^\s@]+@[^\s@]+\.[^\s@]+$", RegexOptions.Compiled);
-    private static readonly Regex PasswordRegex = new(
-        @"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{20,64}$", RegexOptions.Compiled);
+    [GeneratedRegex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$")]
+    private static partial Regex EmailRegex();
+
+    [GeneratedRegex(@"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{20,64}$")]
+    private static partial Regex PasswordRegex();
 
     private readonly DlfVotingDbContext _db;
-
+    
+    // ReSharper disable once ConvertToPrimaryConstructor
     public AdministratorsController(DlfVotingDbContext db)
     {
         _db = db;
@@ -29,9 +35,9 @@ public class AdministratorsController : ControllerBase
     public record CreateAdministratorRequest(string Email, string Password);
     public record UpdateAdministratorRequest(string? Email, string? Password);
     public record AdministratorResponse(Guid Id, string Email, DateTime CreatedAt);
-    public record PagedAdministratorsResponse(List<AdministratorResponse> Items, int TotalCount, int Page, int PageSize);
+    private record PagedAdministratorsResponse(List<AdministratorResponse> Items, int TotalCount, int Page, int ItemsPerPage);
     public record ChangeOwnPasswordRequest(string Password);
-    
+
     private Guid GetCurrentAdminId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet]
@@ -57,14 +63,14 @@ public class AdministratorsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateAdministratorRequest request)
     {
-        var email = request.Email?.Trim() ?? string.Empty;
+        var email = request.Email.Trim();
 
-        if (!EmailRegex.IsMatch(email))
+        if (!EmailRegex().IsMatch(email))
         {
             return BadRequest(new { message = "Please provide a valid email address." });
         }
 
-        if (string.IsNullOrEmpty(request.Password) || !PasswordRegex.IsMatch(request.Password))
+        if (string.IsNullOrEmpty(request.Password) || !PasswordRegex().IsMatch(request.Password))
         {
             return BadRequest(new
             {
@@ -100,7 +106,7 @@ public class AdministratorsController : ControllerBase
         return Ok(new AdministratorResponse(admin.Id, admin.Email, admin.CreatedAt));
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAdministratorRequest request)
     {
         if (id == GetCurrentAdminId())
@@ -120,13 +126,13 @@ public class AdministratorsController : ControllerBase
         if (hasEmail)
         {
             email = request.Email!.Trim();
-            if (!EmailRegex.IsMatch(email))
+            if (!EmailRegex().IsMatch(email))
             {
                 return BadRequest(new { message = "Please provide a valid email address." });
             }
         }
 
-        if (hasPassword && !PasswordRegex.IsMatch(request.Password!))
+        if (hasPassword && !PasswordRegex().IsMatch(request.Password!))
         {
             return BadRequest(new
             {
@@ -171,7 +177,7 @@ public class AdministratorsController : ControllerBase
         return Ok(new AdministratorResponse(admin.Id, admin.Email, admin.CreatedAt));
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         if (id == GetCurrentAdminId())
@@ -202,7 +208,7 @@ public class AdministratorsController : ControllerBase
     [HttpPut("me/password")]
     public async Task<IActionResult> ChangeOwnPassword([FromBody] ChangeOwnPasswordRequest request)
     {
-        if (string.IsNullOrEmpty(request.Password) || !PasswordRegex.IsMatch(request.Password))
+        if (string.IsNullOrEmpty(request.Password) || !PasswordRegex().IsMatch(request.Password))
         {
             return BadRequest(new
             {
