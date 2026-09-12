@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useUserAuth } from '../context/UserAuthContext'
-import EditVoteDialog from '../components/EditVoteDialog'
+import { useUserAuth } from '../../context/UserAuthContext'
+import EditVoteDialog from '../../components/EditVoteDialog'
+
 import './Welcome.css'
 
 type VotingOption = {

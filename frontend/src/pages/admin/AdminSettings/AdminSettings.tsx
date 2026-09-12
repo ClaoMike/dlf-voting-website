@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import PasswordField from '../../components/PasswordField'
-import { isValidPassword } from '../../utils/validation'
+import PasswordField from '../../../components/PasswordField/PasswordField'
+import { isValidPassword } from '../../../utils/validation'
+import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
+import { useAdminAuth } from '../../../context/AdminAuthContext'
+
 import './AdminSettings.css'
-import PasswordRevealDialog from '../../components/PasswordRevealDialog'
-import { useAdminAuth } from '../../context/AdminAuthContext'
 
 const STATUS_API = 'http://localhost:5120/api/settings/voting'
 const CHANGE_PASSWORD_API = 'http://localhost:5120/api/administrators/me/password'

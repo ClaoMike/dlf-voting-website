@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import ConfirmDialog from '../../components/ConfirmDialog'
-import CreateUserDialog from '../../components/CreateUserDialog'
-import EditUserDialog from '../../components/EditUserDialog'
-import PasswordRevealDialog from '../../components/PasswordRevealDialog'
-import '../admin/AdminVotingOptions.css'
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
+import CreateUserDialog from '../../../components/CreateUserDialog'
+import EditUserDialog from '../../../components/EditUserDialog'
+import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
+
+import '../AdminVotingOptions/AdminVotingOptions.css'
 import './AdminUsers.css'
 
 type User = {

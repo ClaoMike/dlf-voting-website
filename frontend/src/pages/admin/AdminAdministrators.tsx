@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import ConfirmDialog from '../../components/ConfirmDialog'
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog'
 import CreateUserDialog from '../../components/CreateUserDialog'
 import EditUserDialog from '../../components/EditUserDialog'
-import PasswordRevealDialog from '../../components/PasswordRevealDialog'
+import PasswordRevealDialog from '../../components/PasswordRevealDialog/PasswordRevealDialog'
 import { useAdminAuth } from '../../context/AdminAuthContext'
-import '../admin/AdminVotingOptions.css'
-import '../admin/AdminUsers.css'
+
+import '../admin/AdminVotingOptions/AdminVotingOptions.css'
+import '../admin/AdminUsers/AdminUsers.css'
 
 type Administrator = {
     id: string

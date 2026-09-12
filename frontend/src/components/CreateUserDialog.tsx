@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import PasswordField from './PasswordField'
+import PasswordField from './PasswordField/PasswordField'
 import { isValidEmail, isValidPassword } from '../utils/validation'
-import './ConfirmDialog.css'
+
+import './ConfirmDialog/ConfirmDialog.css'
 
 type CreateUserDialogProps = {
     onCreate: (email: string, password: string) => void

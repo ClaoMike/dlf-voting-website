@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import ConfirmDialog from '../../components/ConfirmDialog'
-import EditNameDialog from '../../components/EditNameDialog'
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
+import EditNameDialog from '../../../components/EditNameDialog'
+
 import './AdminVotingOptions.css'
 
 type VotingOption = {

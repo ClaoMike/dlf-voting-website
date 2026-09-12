@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import './ConfirmDialog.css'
+import './ConfirmDialog/ConfirmDialog.css'
 
 type EditNameDialogProps = {
     title: string

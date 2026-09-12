@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import dlfLogo from '../assets/dlf-logo.svg'
-import { useAdminAuth } from '../context/AdminAuthContext'
-import { useUserAuth } from '../context/UserAuthContext'
-import ConfirmDialog from './ConfirmDialog'
+import dlfLogo from '../../assets/dlf-logo.svg'
+import { useAdminAuth } from '../../context/AdminAuthContext'
+import { useUserAuth } from '../../context/UserAuthContext'
+import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import { VOTING_SYSTEM_WEBSITE_TITLE } from '../../constants/strings'
+
 import './Layout.css'
-import { VOTING_SYSTEM_WEBSITE_TITLE } from '../constants/strings'
 
 const ADMIN_NAV_ITEMS = [
     { label: 'Overview', path: '/admin/overview' },

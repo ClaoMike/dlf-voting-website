@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { generateSecurePassword } from '../utils/passwordGenerator'
+import { generateSecurePassword } from '../../utils/passwordGenerator'
+
 import './PasswordField.css'
 
 type PasswordFieldProps = {

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import ConfirmDialog from '../../components/ConfirmDialog'
-import EditVoteDialog from '../../components/EditVoteDialog'
-import ProgressRing from '../../components/ProgressRing'
-import VoteBarChart from '../../components/VoteBarChart'
-import '../admin/AdminVotingOptions.css'
-import '../../components/VoteBarChart.css'
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
+import EditVoteDialog from '../../../components/EditVoteDialog'
+import ProgressRing from '../../../components/ProgressRing'
+import VoteBarChart from '../../../components/VoteBarChart/VoteBarChart'
+
+import '../AdminVotingOptions/AdminVotingOptions.css'
+import '../../../components/VoteBarChart/VoteBarChart.css'
 import './AdminOverview.css'
 
 type VoteRow = {
