@@ -29,6 +29,114 @@ public class UsersController : ControllerBase
     public record UpdateUserRequest(string? Email, string? Password);
     public record UserResponse(Guid Id, string Email, DateTime CreatedAt);
     public record PagedUsersResponse(List<UserResponse> Items, int TotalCount, int Page, int PageSize);
+    public record BulkImportedUser(string Email, string Password);
+    public record BulkImportSkippedEntry(string Email, string Reason);
+    public record BulkImportResponse(List<BulkImportedUser> Created, List<BulkImportSkippedEntry> Skipped);
+
+    [HttpPost("bulk-import")]
+    public async Task<IActionResult> BulkImport(IFormFile file)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Please provide a CSV file." });
+        }
+
+        var candidateEmails = new List<string>();
+        using (var reader = new StreamReader(file.OpenReadStream()))
+        {
+            string? line;
+            var isFirstLine = true;
+            while ((line = await reader.ReadLineAsync()) is not null)
+            {
+                var value = line.Split(',')[0].Trim().Trim('"');
+
+                if (isFirstLine)
+                {
+                    isFirstLine = false;
+                    if (value.Equals("email", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue; // header row, skip it
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    candidateEmails.Add(value);
+                }
+            }
+        }
+
+        var skipped = new List<BulkImportSkippedEntry>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var toCreate = new List<string>();
+
+        foreach (var email in candidateEmails)
+        {
+            if (!EmailRegex.IsMatch(email))
+            {
+                skipped.Add(new BulkImportSkippedEntry(email, "Invalid email format"));
+                continue;
+            }
+
+            if (!seen.Add(email))
+            {
+                skipped.Add(new BulkImportSkippedEntry(email, "Duplicate in file"));
+                continue;
+            }
+
+            toCreate.Add(email);
+        }
+
+        if (toCreate.Count > 0)
+        {
+            var existingEmails = await _db.Users
+                .Where(u => toCreate.Contains(u.Email))
+                .Select(u => u.Email)
+                .ToListAsync();
+
+            var existingSet = new HashSet<string>(existingEmails, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var email in existingEmails)
+            {
+                skipped.Add(new BulkImportSkippedEntry(email, "Already exists"));
+            }
+
+            toCreate = toCreate.Where(e => !existingSet.Contains(e)).ToList();
+        }
+
+        var created = new List<BulkImportedUser>();
+        foreach (var email in toCreate)
+        {
+            var password = SecurePasswordGenerator.Generate();
+
+            _db.Users.Add(new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                CreatedAt = DateTime.UtcNow
+            });
+
+            created.Add(new BulkImportedUser(email, password));
+        }
+
+        if (created.Count > 0)
+        {
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                return Conflict(new
+                {
+                    message = "One or more emails were created by someone else at the same moment. Please re-upload the file to retry the remaining entries."
+                });
+            }
+        }
+
+        return Ok(new BulkImportResponse(created, skipped));
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetPage([FromQuery] int page = 1)

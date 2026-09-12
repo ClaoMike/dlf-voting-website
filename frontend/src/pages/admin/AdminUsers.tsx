@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import CreateUserDialog from '../../components/CreateUserDialog'
 import EditUserDialog from '../../components/EditUserDialog'
@@ -42,6 +42,73 @@ function AdminUsers() {
 
     const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
 
+    const [isImporting, setIsImporting] = useState(false)
+    const [importSummary, setImportSummary] = useState<{ created: number; skipped: number } | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const escapeCsvField = (value: string) => {
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+            return `"${value.replace(/"/g, '""')}"`
+        }
+        return value
+    }
+
+    const downloadCsv = (rows: { email: string; password: string }[]) => {
+        const header = 'email,password'
+        const lines = rows.map((r) => `${escapeCsvField(r.email)},${escapeCsvField(r.password)}`)
+        const csvContent = [header, ...lines].join('\n')
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `imported-users-${new Date().toISOString().slice(0, 10)}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsImporting(true)
+        setError(null)
+        setImportSummary(null)
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const res = await fetch(`${API_BASE}/bulk-import`, {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+            })
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null)
+                setError(body?.message ?? 'Failed to import users.')
+                return
+            }
+
+            const data: { created: { email: string; password: string }[]; skipped: { email: string; reason: string }[] } =
+                await res.json()
+
+            setImportSummary({ created: data.created.length, skipped: data.skipped.length })
+
+            if (data.created.length > 0) {
+                downloadCsv(data.created)
+            }
+
+            await fetchUsers(1)
+        } catch {
+            setError('Failed to import users.')
+        } finally {
+            setIsImporting(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+    
     const fetchUsers = async (targetPage: number) => {
         setIsLoading(true)
         setError(null)
@@ -164,6 +231,22 @@ function AdminUsers() {
                 </button>
 
                 <button
+                    className="voting-options-add-row-button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                >
+                    {isImporting ? 'Importing...' : 'Import users from CSV'}
+                </button>
+
+                <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    ref={fileInputRef}
+                    onChange={handleFileSelected}
+                    style={{ display: 'none' }}
+                />
+
+                <button
                     className="voting-options-remove-all"
                     disabled={users.length === 0}
                     onClick={() => setShowRemoveAllConfirm(true)}
@@ -171,6 +254,13 @@ function AdminUsers() {
                     Remove all
                 </button>
             </div>
+
+            {importSummary && (
+                <p className="administrators-self-label">
+                    Imported {importSummary.created} user{importSummary.created === 1 ? '' : 's'}
+                    {importSummary.skipped > 0 ? `, skipped ${importSummary.skipped} (see downloaded file for details)` : ''}.
+                </p>
+            )}
 
             {error && <p className="voting-options-error">{error}</p>}
 
