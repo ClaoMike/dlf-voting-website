@@ -7,7 +7,7 @@ import Welcome from './pages/Welcome/Welcome'
 import AdminOverview from './pages/admin/AdminOverview/AdminOverview'
 import AdminVotingOptions from './pages/admin/AdminVotingOptions/AdminVotingOptions'
 import AdminUsers from './pages/admin/AdminUsers/AdminUsers'
-import AdminAdministrators from './pages/admin/AdminAdministrators'
+import AdminAdministrators from './pages/admin/AdminAdministrators/AdminAdministrators'
 import AdminSettings from './pages/admin/AdminSettings/AdminSettings'
 import {VOTING_SYSTEM_WEBSITE_TITLE} from "./constants/strings.ts";
 import {useEffect} from "react";
