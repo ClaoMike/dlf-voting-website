@@ -19,22 +19,23 @@ public class AdminAuthController : ControllerBase
         _db = db;
     }
 
-    public record LoginRequest(string Email, string Password);
+    public record LoginRequest(string Username, string Password);
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var admin = await _db.Administrators
-            .FirstOrDefaultAsync(a => a.Email == request.Email);
+            .FirstOrDefaultAsync(a => a.Username == request.Username.Trim());
 
         if (admin is null || !BCrypt.Net.BCrypt.Verify(request.Password, admin.PasswordHash))
         {
-            return Unauthorized(new { message = "Invalid email or password." });
+            return Unauthorized(new { message = "Invalid username or password." });
         }
 
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, admin.Id.ToString()),
+            new(ClaimTypes.Name, admin.Username),
             new(ClaimTypes.Email, admin.Email)
         };
 
@@ -47,7 +48,7 @@ public class AdminAuthController : ControllerBase
             ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5)
         });
 
-        return Ok(new { email = admin.Email });
+        return Ok(new { username = admin.Username, email = admin.Email });
     }
 
     [HttpPost("logout")]
@@ -61,7 +62,10 @@ public class AdminAuthController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        return Ok(new { email });
+        return Ok(new
+        {
+            username = User.FindFirstValue(ClaimTypes.Name),
+            email = User.FindFirstValue(ClaimTypes.Email)
+        });
     }
 }
