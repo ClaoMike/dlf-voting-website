@@ -10,9 +10,11 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
     protected TestWebApplicationFactory Factory { get; }
     private readonly DatabaseFixture _dbFixture = new();
 
+    // Admins keep their email as username.
     protected const string AdminEmail = "test-admin@example.com";
     protected const string AdminPassword = "correct-horse-battery";
 
+    protected const string UserUsername = "test-user";
     protected const string UserEmail = "test-user@example.com";
     protected const string UserPassword = "correct-horse-battery-staple-1!";
 
@@ -46,6 +48,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         db.Administrators.Add(new Administrator
         {
             Id = Guid.NewGuid(),
+            Username = AdminEmail,
             Email = AdminEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(AdminPassword),
             CreatedAt = DateTime.UtcNow
@@ -62,6 +65,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
+            Username = UserUsername,
             Email = UserEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword),
             CreatedAt = DateTime.UtcNow
@@ -75,7 +79,7 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         var loginClient = Factory.CreateClient();
         var response = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = AdminEmail,
+            username = AdminEmail,
             password = AdminPassword
         });
 
@@ -87,12 +91,12 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
     }
 
     protected async Task<HttpClient> CreateAuthenticatedUserClientAsync(
-        string? email = null, string? password = null)
+        string? username = null, string? password = null)
     {
         var loginClient = Factory.CreateClient();
         var response = await loginClient.PostAsJsonAsync("/api/auth/user/login", new
         {
-            email = email ?? UserEmail,
+            username = username ?? UserUsername,
             password = password ?? UserPassword
         });
 
