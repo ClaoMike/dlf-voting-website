@@ -223,7 +223,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task GetPage_IsSortedAlphabeticallyByName_WithDanishLettersLast_AndUnnamedUsersAfter()
     {
         var client = await CreateAuthenticatedClientAsync();
-        await client.PostAsync("/api/users/import-employees", BuildXlsxFileContent([
+        await RunImportAsync(client, "/api/users/import-employees", BuildXlsxFileContent([
             EmployeeHeader,
             ["S1", "Åse", "Berg", "DLF01", null, null],
             ["S2", "Zenia", "Dahl", "DLF01", null, null],
@@ -667,7 +667,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithoutAuth_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
-        var response = await client.PostAsync("/api/users/bulk-import", BuildXlsxFileContent("email", "a@example.com"));
+        var response = await RunImportAsync(client, "/api/users/bulk-import", BuildXlsxFileContent("email", "a@example.com"));
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -675,7 +675,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task BulkImport_WithNoFile_ReturnsBadRequest()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var response = await client.PostAsync("/api/users/bulk-import", new MultipartFormDataContent());
+        var response = await RunImportAsync(client, "/api/users/bulk-import", new MultipartFormDataContent());
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -685,7 +685,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var csv = BuildFileContent(Encoding.UTF8.GetBytes("email\ncsv@example.com"), "users.csv", "text/csv");
 
-        var response = await client.PostAsync("/api/users/bulk-import", csv);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", csv);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("Please upload an Excel file (.xlsx).", await ReadMessageAsync(response));
@@ -697,7 +697,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var fake = BuildFileContent(Encoding.UTF8.GetBytes("email\ncsv@example.com"), "users.xlsx", "text/csv");
 
-        var response = await client.PostAsync("/api/users/bulk-import", fake);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", fake);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -708,7 +708,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "bulk1@example.com", "bulk2@example.com", "bulk3@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
@@ -732,7 +732,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "sheet-created@example.com", "not-an-email");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         using var workbook = OpenResultWorkbook(body!.File!);
@@ -755,7 +755,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("noheader1@example.com", "noheader2@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Equal(2, body!.Created.Count);
@@ -767,7 +767,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "dup-in-file@example.com", "dup-in-file@example.com", "dup-in-file@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "dup-in-file@example.com");
@@ -782,7 +782,7 @@ public class UsersControllerTests : IntegrationTestBase
 
         var content = BuildXlsxFileContent("email", "already-exists@example.com", "brand-new@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "brand-new@example.com");
@@ -795,7 +795,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "not-an-email", "valid-one@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created, c => c.Email == "valid-one@example.com");
@@ -808,7 +808,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "", "blank-line-test@example.com", "");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Single(body!.Created);
@@ -829,7 +829,7 @@ public class UsersControllerTests : IntegrationTestBase
             "mix-new-1@example.com", // duplicate of a valid new one
             "not-valid-email");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         Assert.Equal(2, body!.Created.Count);
@@ -848,7 +848,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent("email", "unique-pw-1@example.com", "unique-pw-2@example.com", "unique-pw-3@example.com");
 
-        var response = await client.PostAsync("/api/users/bulk-import", content);
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
 
         var distinctPasswords = body!.Created.Select(c => c.Password).Distinct().Count();
@@ -863,9 +863,9 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
 
         // Two files share one overlapping email, each also has a unique one of its own.
-        var task1 = client.PostAsync("/api/users/bulk-import",
+        var task1 = RunImportAsync(client, "/api/users/bulk-import",
             BuildXlsxFileContent("email", "race-shared@example.com", "race-file1-only@example.com"));
-        var task2 = client.PostAsync("/api/users/bulk-import",
+        var task2 = RunImportAsync(client, "/api/users/bulk-import",
             BuildXlsxFileContent("email", "race-shared@example.com", "race-file2-only@example.com"));
         var responses = await Task.WhenAll(task1, task2);
 
@@ -880,23 +880,31 @@ public class UsersControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task ConcurrentBulkImport_CompletelyDisjointFiles_BothFullySucceed()
+    public async Task ConcurrentBulkImport_DisjointFiles_OneAtATime_AndEveryAcceptedImportIsComplete()
     {
         var client = await CreateAuthenticatedClientAsync();
 
-        var task1 = client.PostAsync("/api/users/bulk-import",
+        var task1 = RunImportAsync(client, "/api/users/bulk-import",
             BuildXlsxFileContent("email", "disjoint-a1@example.com", "disjoint-a2@example.com"));
-        var task2 = client.PostAsync("/api/users/bulk-import",
+        var task2 = RunImportAsync(client, "/api/users/bulk-import",
             BuildXlsxFileContent("email", "disjoint-b1@example.com", "disjoint-b2@example.com"));
         var responses = await Task.WhenAll(task1, task2);
 
-        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+        // Imports run one at a time: an overlapping one is turned away (409) rather than slowing both down.
+        foreach (var response in responses)
+        {
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                Assert.Equal("An import is already running. Please wait for it to finish.", await ReadMessageAsync(response));
+                continue;
+            }
 
-        var body1 = await responses[0].Content.ReadFromJsonAsync<BulkImportResponseDto>();
-        var body2 = await responses[1].Content.ReadFromJsonAsync<BulkImportResponseDto>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+            Assert.Equal(2, body!.Created.Count);
+        }
 
-        Assert.Equal(2, body1!.Created.Count);
-        Assert.Equal(2, body2!.Created.Count);
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.OK);
     }
 
     // --- Employee import ---
@@ -925,7 +933,7 @@ public class UsersControllerTests : IntegrationTestBase
     public async Task ImportEmployees_WithoutAuth_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
-        var response = await client.PostAsync("/api/users/import-employees", BuildXlsxFileContent([EmployeeHeader]));
+        var response = await RunImportAsync(client, "/api/users/import-employees", BuildXlsxFileContent([EmployeeHeader]));
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -935,7 +943,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var csv = BuildFileContent(Encoding.UTF8.GetBytes("Kode;Fornavn\n1;Søren"), "employees.csv", "text/csv");
 
-        var response = await client.PostAsync("/api/users/import-employees", csv);
+        var response = await RunImportAsync(client, "/api/users/import-employees", csv);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -946,7 +954,7 @@ public class UsersControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         var content = BuildXlsxFileContent([["Name", "Company"], ["Søren", "DLF"]]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -961,7 +969,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E1002", "Åse", "Ærø", "DLF02", "15-08-2021", "Ikke valgbar"],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
         Assert.Equal(2, body!.CreatedCount);
@@ -990,7 +998,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E2002", "Jørgen", "Hansen", "DLF03", null, null],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
 
         using var workbook = OpenResultWorkbook(body!.File);
@@ -1026,7 +1034,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E3001", "Karen", "Blixen", "DLF01", null, null],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
 
         Assert.Equal(1, body!.CreatedCount);
@@ -1044,7 +1052,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E4001", "Niels", "Bohr", "DLF01", "sometime in 2020", null],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
 
         Assert.Equal(1, body!.CreatedCount);
@@ -1067,7 +1075,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E5002", "Inger", "Christensen", "DLF01", null, null],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
 
         Assert.Equal(2, body!.CreatedCount);
@@ -1086,7 +1094,7 @@ public class UsersControllerTests : IntegrationTestBase
             ["E6002", "Fine", "Row", "DLF01", null, null],
         ]);
 
-        var response = await client.PostAsync("/api/users/import-employees", content);
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
         var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
 
         Assert.Equal(1, body!.CreatedCount);

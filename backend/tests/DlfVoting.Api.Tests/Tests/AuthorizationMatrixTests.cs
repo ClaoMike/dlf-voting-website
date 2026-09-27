@@ -38,6 +38,8 @@ public class AuthorizationMatrixTests : IntegrationTestBase
         { "DELETE", "/api/users" },
         { "POST", "/api/users/bulk-import" },
         { "POST", "/api/users/import-employees" },
+        { "GET", $"/api/users/imports/{Guid.NewGuid()}" },
+        { "DELETE", $"/api/users/imports/{Guid.NewGuid()}" },
         { "POST", "/api/voting-options" },
         { "PUT", $"/api/voting-options/{Guid.NewGuid()}" },
         { "DELETE", $"/api/voting-options/{Guid.NewGuid()}" },

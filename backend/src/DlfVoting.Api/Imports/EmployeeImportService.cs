@@ -22,7 +22,7 @@ public class EmployeeImportService
         _db = db;
     }
 
-    public async Task<OperationResult<EmployeeImportResponse>> ImportAsync(XLWorkbook workbook)
+    public async Task<OperationResult<EmployeeImportResponse>> ImportAsync(XLWorkbook workbook, ImportProgress? progress = null)
     {
         var layout = EmployeeSheet.Find(workbook);
         if (layout is null)
@@ -56,7 +56,8 @@ public class EmployeeImportService
         sheet.Cell(layout.HeaderRow, usernameColumn).SetValue("Username").Style = headerStyle;
         sheet.Cell(layout.HeaderRow, passwordColumn).SetValue("Password").Style = headerStyle;
 
-        var hashes = PasswordHashing.HashMany(newUsers.Select(n => n.Password));
+        progress?.Start(newUsers.Count);
+        var hashes = PasswordHashing.HashMany(newUsers.Select(n => n.Password).ToList(), progress is null ? null : progress.Advance);
         for (var i = 0; i < newUsers.Count; i++)
         {
             var (user, row, password) = newUsers[i];

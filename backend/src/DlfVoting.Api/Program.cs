@@ -22,6 +22,7 @@ builder.Services.AddScoped<VoteReportService>();
 builder.Services.AddScoped<EmailImportService>();
 builder.Services.AddScoped<EmployeeImportService>();
 builder.Services.AddSingleton<LoginAttemptLimiter>();
+builder.Services.AddSingleton<ImportJobs>();
 
 // The keys that encrypt the session cookies live in the database: sessions survive restarts and redeploys, and
 // all instances of the app accept each other's cookies.

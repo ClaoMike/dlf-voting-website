@@ -33,3 +33,9 @@ export type ImportSummary = {
     skipped: number
     warnings: { row: number; message: string }[]
 }
+
+// Passwords hashed so far out of the users being created; total is 0 while the file is still being read.
+export type ImportProgress = {
+    processed: number
+    total: number
+}

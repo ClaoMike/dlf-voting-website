@@ -1,7 +1,9 @@
 using DlfVoting.Domain;
 using DlfVoting.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace DlfVoting.Api.Tests;
 
@@ -105,5 +107,40 @@ public abstract class IntegrationTestBase : IClassFixture<TestWebApplicationFact
         var client = Factory.CreateClient();
         client.DefaultRequestHeaders.Add("Cookie", cookie);
         return client;
+    }
+
+    /// <summary>
+    /// Runs an Excel import the way the browser does (start it, then poll until it finishes) and returns what the
+    /// old single-request endpoint returned: 200 with the import's result, 400 with the message when the import
+    /// failed, or the start request's own response when no import started (401, 400 for a bad file, 409 while
+    /// another import is running).
+    /// </summary>
+    protected static async Task<HttpResponseMessage> RunImportAsync(HttpClient client, string path, HttpContent content)
+    {
+        var start = await client.PostAsync(path, content);
+        if (start.StatusCode != HttpStatusCode.Accepted) return start;
+
+        var id = (await start.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+        var deadline = DateTime.UtcNow.AddMinutes(2);
+        while (true)
+        {
+            var poll = await client.GetAsync($"/api/users/imports/{id}");
+            poll.EnsureSuccessStatusCode();
+            var job = await poll.Content.ReadFromJsonAsync<JsonElement>();
+
+            switch (job.GetProperty("status").GetString())
+            {
+                case "succeeded":
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(job.GetProperty("result")) };
+                case "failed":
+                    return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                    {
+                        Content = JsonContent.Create(new { message = job.GetProperty("message").GetString() })
+                    };
+            }
+
+            if (DateTime.UtcNow > deadline) throw new TimeoutException($"Import {id} did not finish.");
+            await Task.Delay(50);
+        }
     }
 }

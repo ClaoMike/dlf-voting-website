@@ -36,6 +36,28 @@ function AdminUsers() {
                     onRemoveAllClick={actions.openRemoveAllConfirm}
                 />
 
+                {importState.isImporting && (
+                    <div className="import-progress">
+                        <p role="status">
+                            {importState.progress && importState.progress.total > 0
+                                ? 'Creating users and their passwords. This can take a few minutes; the Excel file with the logins downloads when it is done.'
+                                : 'Reading the file…'}
+                        </p>
+                        {importState.progress && importState.progress.total > 0 && (
+                            <>
+                                <progress
+                                    value={importState.progress.processed}
+                                    max={importState.progress.total}
+                                    aria-label="Import progress"
+                                />
+                                <span className="import-progress-count">
+                                    {importState.progress.processed} of {importState.progress.total}
+                                </span>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {importState.importSummary && (
                     <p className="import-summary" role="status">
                         Imported {importState.importSummary.created} user

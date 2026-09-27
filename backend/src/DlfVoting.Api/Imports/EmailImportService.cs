@@ -22,7 +22,7 @@ public class EmailImportService
         _db = db;
     }
 
-    public async Task<OperationResult<BulkImportResponse>> ImportAsync(XLWorkbook workbook)
+    public async Task<OperationResult<BulkImportResponse>> ImportAsync(XLWorkbook workbook, ImportProgress? progress = null)
     {
         var skipped = new List<BulkImportSkippedEntry>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -51,7 +51,8 @@ public class EmailImportService
         var emailsToCreate = candidates.Where(e => !existingSet.Contains(e)).ToList();
         var usernames = await UsernameGenerator.GenerateUniqueAsync(_db, emailsToCreate.Count);
         var passwords = emailsToCreate.Select(_ => SecurePasswordGenerator.Generate()).ToList();
-        var hashes = PasswordHashing.HashMany(passwords);
+        progress?.Start(passwords.Count);
+        var hashes = PasswordHashing.HashMany(passwords, progress is null ? null : progress.Advance);
 
         var created = new List<BulkImportedUser>();
         for (var i = 0; i < emailsToCreate.Count; i++)

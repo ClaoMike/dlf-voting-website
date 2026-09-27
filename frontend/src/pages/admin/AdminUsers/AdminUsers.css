@@ -107,3 +107,34 @@
     font-size: 0.85rem;
     color: var(--text);
 }
+
+.import-progress {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin: 0 0 1rem;
+    padding: 0.75rem;
+    border-left: 4px solid var(--accent-strong);
+    border-radius: 4px;
+    background-color: var(--accent-soft);
+    color: var(--text-h);
+    font-size: 0.9rem;
+}
+
+.import-progress p {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.import-progress progress {
+    flex: 1;
+    min-width: 160px;
+    height: 0.75rem;
+    accent-color: var(--accent-strong);
+}
+
+.import-progress-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}

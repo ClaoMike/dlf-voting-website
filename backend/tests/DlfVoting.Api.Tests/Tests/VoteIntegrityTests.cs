@@ -154,7 +154,7 @@ public class VoteIntegrityTests : IntegrationTestBase
     {
         var admin = await CreateAuthenticatedClientAsync();
 
-        var response = await admin.PostAsync("/api/users/bulk-import", BuildEmailWorkbook(UserEmail.ToUpperInvariant()));
+        var response = await RunImportAsync(admin, "/api/users/bulk-import", BuildEmailWorkbook(UserEmail.ToUpperInvariant()));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
@@ -321,7 +321,7 @@ public class VoteIntegrityTests : IntegrationTestBase
             "@SUM(1+1)",
             "valid.person@example.com");
 
-        var response = await admin.PostAsync("/api/users/bulk-import", upload);
+        var response = await RunImportAsync(admin, "/api/users/bulk-import", upload);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
