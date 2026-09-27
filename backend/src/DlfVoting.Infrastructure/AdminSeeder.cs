@@ -20,6 +20,7 @@ public static class AdminSeeder
         var admin = new Administrator
         {
             Id = Guid.NewGuid(),
+            Username = defaultEmail,
             Email = defaultEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("gacfYp-zyvjaj-fovde9"),
             CreatedAt = DateTime.UtcNow
