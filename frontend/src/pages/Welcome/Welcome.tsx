@@ -7,7 +7,7 @@ import { useVotingData } from './useVotingData'
 import './Welcome.css'
 
 function Welcome() {
-    const { email } = useUserAuth()
+    const { username, fullName } = useUserAuth()
     const data = useVotingData()
     const [selectedId, setSelectedId] = useState('')
     const [showEditVote, setShowEditVote] = useState(false)
@@ -26,7 +26,7 @@ function Welcome() {
     return (
         <div className="welcome-page">
             <h1>
-                Welcome, <span className="welcome-email">{email}</span>
+                Welcome, <span className="welcome-email">{fullName ?? username}</span>!
             </h1>
 
             <section className="vote-section">
