@@ -4,6 +4,10 @@ obj/
 *.user
 *.suo
 
+# Deployment package (see "Deploying to production" in README.md)
+publish/
+app.zip
+
 # Node / Vite
 node_modules/
 dist/
