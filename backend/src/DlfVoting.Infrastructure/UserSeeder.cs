@@ -19,6 +19,7 @@ public static class UserSeeder
             users.Add(new User
             {
                 Id = Guid.NewGuid(),
+                Username = $"user{i:D2}",
                 Email = $"user{i:D2}@example.com",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("DevSeedPassword1234!@#"),
                 CreatedAt = DateTime.UtcNow.AddMinutes(-i)
