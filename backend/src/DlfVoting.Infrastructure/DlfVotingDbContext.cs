@@ -17,12 +17,22 @@ public class DlfVotingDbContext : DbContext
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<VotingSettings> VotingSettings => Set<VotingSettings>();
     
+    // ICU nondeterministic collation: equality and unique indexes ignore case ("JDoe" == "jdoe").
+    public const string CaseInsensitiveCollation = "case_insensitive";
+
+    // Postgres' built-in Danish ICU collation, for sorting people by name: Æ, Ø, Å after Z, case doesn't split the list.
+    public const string DanishCollation = "da-x-icu";
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        
+        modelBuilder.HasCollation(CaseInsensitiveCollation, locale: "und-u-ks-level2", provider: "icu", deterministic: false);
+
         modelBuilder.Entity<Administrator>(entity =>
         {
             entity.HasKey(a => a.Id);
+            entity.Property(a => a.Username).IsRequired().HasMaxLength(Administrator.UsernameMaxLength)
+                .UseCollation(CaseInsensitiveCollation);
+            entity.HasIndex(a => a.Username).IsUnique();
             entity.Property(a => a.Email).IsRequired().HasMaxLength(320);
             entity.HasIndex(a => a.Email).IsUnique();
             entity.Property(a => a.PasswordHash).IsRequired();
@@ -38,9 +48,17 @@ public class DlfVotingDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
-            entity.Property(u => u.Email).IsRequired().HasMaxLength(320);
+            entity.Property(u => u.Username).IsRequired().HasMaxLength(User.UsernameMaxLength)
+                .UseCollation(CaseInsensitiveCollation);
+            entity.HasIndex(u => u.Username).IsUnique();
+            entity.Property(u => u.Email).HasMaxLength(320);
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.EmployeeCode).HasMaxLength(User.EmployeeFieldMaxLength);
+            entity.Property(u => u.FirstName).HasMaxLength(User.EmployeeFieldMaxLength);
+            entity.Property(u => u.LastName).HasMaxLength(User.EmployeeFieldMaxLength);
+            entity.Property(u => u.CompanyCode).HasMaxLength(User.EmployeeFieldMaxLength);
+            entity.Property(u => u.Electability).HasMaxLength(User.EmployeeFieldMaxLength);
         });
         
         modelBuilder.Entity<Vote>(entity =>
