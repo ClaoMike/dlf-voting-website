@@ -25,14 +25,14 @@ Integration tests for the ASP.NET Core API, run against a real PostgreSQL databa
 ```
    You should see that role listed in the access privileges column.
 
-3. Confirm `dotnet-ef` CLI tool matches the project's EF Core major version (currently 9.x):
+3. Confirm `dotnet-ef` CLI tool matches the project's EF Core major version (currently 10.x):
 ```bash
    dotnet ef --version
 ```
-   If it reports a different major version (e.g. 10.x), reinstall pinned:
+   If it reports a different major version (e.g. 9.x), reinstall pinned:
 ```bash
    dotnet tool uninstall --global dotnet-ef
-   dotnet tool install --global dotnet-ef --version 9.0.9
+   dotnet tool install --global dotnet-ef --version 10.0.12
 ```
 
 ## Running tests

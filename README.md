@@ -5,6 +5,8 @@ Website used by DLF to vote on internal stuff.
 
 ### Backend
 
+Needs the .NET 10 SDK (`global.json` pins 10.0.x).
+
 ```bash
 dotnet run --project backend/src/DlfVoting.Api
 ```

@@ -2,7 +2,7 @@
 
 ## How it runs
 
-One **Azure App Service** (Linux, .NET 9) serves both the website and the API from the same address:
+One **Azure App Service** (Linux, .NET 10) serves both the website and the API from the same address:
 
 ```
 https://<app>.azurewebsites.net/          → the React site (wwwroot, built by dotnet publish)
@@ -40,7 +40,7 @@ Pick one EU region close to Denmark for everything (e.g. North Europe, West Euro
    - B1 for trying it out. For voting day use at least P0v3/P1v3: every sign-in deliberately costs ~0.1 s of CPU
      (password hashing), so hundreds of people signing in at once need cores.
    - Start with **one instance** (see "Scaling out" below).
-4. **Web App** on that plan, runtime stack **.NET 9 (Linux)**. In its settings:
+4. **Web App** on that plan, runtime stack **.NET 10 (LTS)** on Linux. In its settings:
    - Configuration → General: **HTTPS Only** on, minimum TLS 1.2, **Always On** on.
    - Monitoring → Health check: path `/healthz`.
 
