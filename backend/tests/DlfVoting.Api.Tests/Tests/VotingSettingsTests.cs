@@ -174,7 +174,7 @@ public class VotingSettingsTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Admin Override Option");
-        var (userId, _) = await CreateAndLoginUserAsync("admin-override-target@example.com", "SomeValidPassword1!@#");
+        var (userId, _) = await CreateAndLoginUserAsync("override-target", "SomeValidPassword1!@#");
         await SetVotingOpenAsync(false);
 
         var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
@@ -182,21 +182,21 @@ public class VotingSettingsTests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string email, string password)
+    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string username, string password)
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
+            Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             CreatedAt = DateTime.UtcNow
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var client = await CreateAuthenticatedUserClientAsync(email, password);
+        var client = await CreateAuthenticatedUserClientAsync(username, password);
         return (user.Id, client);
     }
 
@@ -247,7 +247,7 @@ public class VotingSettingsTests : IntegrationTestBase
         var client = Factory.CreateClient();
         var response = await client.PostAsJsonAsync("/api/auth/user/login", new
         {
-            email = UserEmail,
+            username = UserUsername,
             password = UserPassword
         });
 
@@ -279,6 +279,7 @@ public class VotingSettingsTests : IntegrationTestBase
             db.Administrators.Add(new Administrator
             {
                 Id = Guid.NewGuid(),
+                Username = secondAdminEmail,
                 Email = secondAdminEmail,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(secondAdminPassword),
                 CreatedAt = DateTime.UtcNow
@@ -291,7 +292,7 @@ public class VotingSettingsTests : IntegrationTestBase
         var loginClient = Factory.CreateClient();
         var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = secondAdminEmail,
+            username = secondAdminEmail,
             password = secondAdminPassword
         });
         var cookie = loginResponse.Headers.GetValues("Set-Cookie").First().Split(';')[0];

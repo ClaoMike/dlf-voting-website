@@ -43,6 +43,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
         db.Administrators.Add(new Administrator
         {
             Id = Guid.NewGuid(),
+            Username = TestEmail,
             Email = TestEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(TestPassword),
             CreatedAt = DateTime.UtcNow
@@ -58,7 +59,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
 
         var response = await client.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = TestEmail,
+            username = TestEmail,
             password = TestPassword
         });
 
@@ -73,7 +74,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
 
         var response = await client.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = TestEmail,
+            username = TestEmail,
             password = "wrong-password"
         });
 
@@ -81,17 +82,33 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Login_WithUnknownEmail_ReturnsUnauthorized()
+    public async Task Login_WithUnknownUsername_ReturnsUnauthorized()
     {
         var client = _factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = "nobody@example.com",
+            username = "nobody@example.com",
             password = "whatever"
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_UsernameIsCaseInsensitive()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/admin/login", new
+        {
+            username = TestEmail.ToUpperInvariant(),
+            password = TestPassword
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.Equal(TestEmail, body?["username"]);
     }
 
     [Fact]
@@ -105,7 +122,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Me_AfterLogin_ReturnsAdminEmail()
+    public async Task Me_AfterLogin_ReturnsAdminUsernameAndEmail()
     {
         var client = _factory.CreateDefaultClient();
         client.DefaultRequestHeaders.Add("Cookie", await LoginAndGetCookieAsync());
@@ -114,6 +131,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.Equal(TestEmail, body?["username"]);
         Assert.Equal(TestEmail, body?["email"]);
     }
 
@@ -138,7 +156,7 @@ public class AdminAuthControllerTests : IClassFixture<TestWebApplicationFactory>
 
         var response = await client.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = TestEmail,
+            username = TestEmail,
             password = TestPassword
         });
 

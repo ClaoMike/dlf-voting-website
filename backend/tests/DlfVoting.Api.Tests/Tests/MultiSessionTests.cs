@@ -57,7 +57,7 @@ public class MultiSessionTests : IntegrationTestBase
         Assert.Equal(HttpStatusCode.OK, userMeResponse.StatusCode);
 
         var adminBody = await adminMeResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-        var userBody = await userMeResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        var userBody = await userMeResponse.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
 
         Assert.Equal(AdminEmail, adminBody?["email"]);
         Assert.Equal(UserEmail, userBody?["email"]);
@@ -100,6 +100,7 @@ public class MultiSessionTests : IntegrationTestBase
             db.Administrators.Add(new Domain.Administrator
             {
                 Id = Guid.NewGuid(),
+                Username = secondAdminEmail,
                 Email = secondAdminEmail,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(secondAdminPassword),
                 CreatedAt = DateTime.UtcNow
@@ -112,7 +113,7 @@ public class MultiSessionTests : IntegrationTestBase
         var secondLoginClient = Factory.CreateClient();
         var secondLoginResponse = await secondLoginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = secondAdminEmail,
+            username = secondAdminEmail,
             password = secondAdminPassword
         });
         var secondCookie = secondLoginResponse.Headers.GetValues("Set-Cookie").First().Split(';')[0];
@@ -135,7 +136,7 @@ public class MultiSessionTests : IntegrationTestBase
     [Fact]
     public async Task MultipleUsers_CanBeLoggedInSimultaneously()
     {
-        const string secondUserEmail = "second-user@example.com";
+        const string secondUsername = "second-user";
         const string secondUserPassword = "another-strong-password!!";
 
         using (var scope = Factory.Services.CreateScope())
@@ -144,7 +145,7 @@ public class MultiSessionTests : IntegrationTestBase
             db.Users.Add(new Domain.User
             {
                 Id = Guid.NewGuid(),
-                Email = secondUserEmail,
+                Username = secondUsername,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(secondUserPassword),
                 CreatedAt = DateTime.UtcNow
             });
@@ -152,7 +153,7 @@ public class MultiSessionTests : IntegrationTestBase
         }
 
         var firstUserClient = await CreateAuthenticatedUserClientAsync();
-        var secondUserClient = await CreateAuthenticatedUserClientAsync(secondUserEmail, secondUserPassword);
+        var secondUserClient = await CreateAuthenticatedUserClientAsync(secondUsername, secondUserPassword);
 
         var firstMeResponse = await firstUserClient.GetAsync("/api/auth/user/me");
         var secondMeResponse = await secondUserClient.GetAsync("/api/auth/user/me");
@@ -163,14 +164,14 @@ public class MultiSessionTests : IntegrationTestBase
         var firstBody = await firstMeResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
         var secondBody = await secondMeResponse.Content.ReadFromJsonAsync<Dictionary<string, string>>();
 
-        Assert.Equal(UserEmail, firstBody?["email"]);
-        Assert.Equal(secondUserEmail, secondBody?["email"]);
+        Assert.Equal(UserUsername, firstBody?["username"]);
+        Assert.Equal(secondUsername, secondBody?["username"]);
     }
 
     [Fact]
     public async Task OneUsersLogout_DoesNotAffectAnotherUsersSession()
     {
-        const string secondUserEmail = "logout-test-user@example.com";
+        const string secondUsername = "logout-test-user";
         const string secondUserPassword = "yet-another-password!!";
 
         using (var scope = Factory.Services.CreateScope())
@@ -179,7 +180,7 @@ public class MultiSessionTests : IntegrationTestBase
             db.Users.Add(new Domain.User
             {
                 Id = Guid.NewGuid(),
-                Email = secondUserEmail,
+                Username = secondUsername,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(secondUserPassword),
                 CreatedAt = DateTime.UtcNow
             });
@@ -187,7 +188,7 @@ public class MultiSessionTests : IntegrationTestBase
         }
 
         var firstUserClient = await CreateAuthenticatedUserClientAsync();
-        var secondUserClient = await CreateAuthenticatedUserClientAsync(secondUserEmail, secondUserPassword);
+        var secondUserClient = await CreateAuthenticatedUserClientAsync(secondUsername, secondUserPassword);
 
         await firstUserClient.PostAsync("/api/auth/user/logout", null);
 

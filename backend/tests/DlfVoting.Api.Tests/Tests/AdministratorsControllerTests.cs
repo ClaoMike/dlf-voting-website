@@ -9,7 +9,7 @@ namespace DlfVoting.Api.Tests.Tests;
 
 public class AdministratorsControllerTests : IntegrationTestBase
 {
-    private record AdministratorResponseDto(Guid Id, string Email, DateTime CreatedAt);
+    private record AdministratorResponseDto(Guid Id, string Username, DateTime CreatedAt);
     private record PagedAdministratorsResponseDto(List<AdministratorResponseDto> Items, int TotalCount, int Page, int PageSize);
 
     private const string ValidPassword = "ValidPassword1234!@#$";
@@ -21,7 +21,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
     private static async Task<Guid> CreateAdminAsync(HttpClient client, string email, string password = ValidPassword)
     {
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email, password });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = email, email, password });
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadFromJsonAsync<AdministratorResponseDto>();
         return body!.Id;
@@ -34,6 +34,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         db.Administrators.Add(new Administrator
         {
             Id = Guid.NewGuid(),
+            Username = email,
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             CreatedAt = DateTime.UtcNow
@@ -41,7 +42,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         await db.SaveChangesAsync();
 
         var loginClient = Factory.CreateClient();
-        var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email, password });
+        var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { username = email, password });
         var cookie = loginResponse.Headers.GetValues("Set-Cookie").First().Split(';')[0];
         var client = Factory.CreateClient();
         client.DefaultRequestHeaders.Add("Cookie", cookie);
@@ -70,7 +71,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
     public async Task Create_WithoutAuth_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email = "a@b.com", password = ValidPassword });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "a@b.com", email = "a@b.com", password = ValidPassword });
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -96,7 +97,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
     public async Task Create_WithInvalidEmail_ReturnsBadRequest()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email = "not-an-email", password = ValidPassword });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "valid-admin-name", email = "not-an-email", password = ValidPassword });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -108,7 +109,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
     public async Task Create_WithInvalidPassword_ReturnsBadRequest(string password)
     {
         var client = await CreateAuthenticatedClientAsync();
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email = "valid@example.com", password });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "valid@example.com", email = "valid@example.com", password });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -116,11 +117,11 @@ public class AdministratorsControllerTests : IntegrationTestBase
     public async Task Create_WithValidData_Succeeds()
     {
         var client = await CreateAuthenticatedClientAsync();
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email = "newadmin@example.com", password = ValidPassword });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "newadmin@example.com", email = "newadmin@example.com", password = ValidPassword });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<AdministratorResponseDto>();
-        Assert.Equal("newadmin@example.com", body!.Email);
+        Assert.Equal("newadmin@example.com", body!.Username);
     }
 
     [Fact]
@@ -129,8 +130,52 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         await CreateAdminAsync(client, "dupadmin@example.com");
 
-        var response = await client.PostAsJsonAsync("/api/administrators", new { email = "dupadmin@example.com", password = ValidPassword });
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "different-username", email = "dupadmin@example.com", password = ValidPassword });
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.Equal("An administrator with this email already exists.", body?["message"]);
+    }
+
+    [Fact]
+    public async Task Create_WithTooShortUsername_ReturnsBadRequest()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = "abc", email = "short@example.com", password = ValidPassword });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_WithUsernameLongerThan20Characters_Succeeds()
+    {
+        // Admin usernames were backfilled from emails, so they are not held to the 20-character user limit.
+        var client = await CreateAuthenticatedClientAsync();
+        const string username = "a-rather-long-admin-username@example.com";
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username, email = "long@example.com", password = ValidPassword });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<AdministratorResponseDto>();
+        Assert.Equal(username, body!.Username);
+    }
+
+    [Fact]
+    public async Task Create_WithDuplicateUsernameDifferentCase_ReturnsConflict()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var response = await client.PostAsJsonAsync("/api/administrators", new { username = AdminEmail.ToUpperInvariant(), email = "other@example.com", password = ValidPassword });
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_Username_AllowsLoginWithNewUsername()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var otherId = await CreateAdminAsync(client, "rename-me@example.com");
+
+        var response = await client.PutAsJsonAsync($"/api/administrators/{otherId}", new { username = "renamed-admin" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var loginResponse = await Factory.CreateClient().PostAsJsonAsync("/api/auth/admin/login", new { username = "renamed-admin", password = ValidPassword });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
     }
 
     // --- Pagination / ordering ---
@@ -147,7 +192,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var response = await client.GetAsync("/api/administrators?page=1");
         var body = await response.Content.ReadFromJsonAsync<PagedAdministratorsResponseDto>();
 
-        Assert.Equal(AdminEmail, body!.Items[0].Email);
+        Assert.Equal(AdminEmail, body!.Items[0].Username);
     }
 
     private static readonly string[] ExpectedNonCurrentAdminOrder = ["aaa-second@example.com", "zzz-third@example.com"];
@@ -162,7 +207,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var response = await client.GetAsync("/api/administrators?page=1");
         var body = await response.Content.ReadFromJsonAsync<PagedAdministratorsResponseDto>();
 
-        var rest = body!.Items.Skip(1).Select(a => a.Email).ToList();
+        var rest = body!.Items.Skip(1).Select(a => a.Username).ToList();
         Assert.Equal(ExpectedNonCurrentAdminOrder, rest);
     }
 
@@ -180,8 +225,24 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
         // +1 for the base seeded admin.
         Assert.Equal(31, body!.TotalCount);
+        // The frontend computes the page count from this; it was once renamed and broke to "Page 1 of NaN".
+        Assert.Equal(25, body.PageSize);
         Assert.Equal(25, body.Items.Count);
-        Assert.Equal(AdminEmail, body.Items[0].Email);
+        Assert.Equal(AdminEmail, body.Items[0].Username);
+    }
+
+    [Fact]
+    public async Task GetPage_ReturnsOnlyIdUsernameAndCreatedDate()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+
+        var response = await client.GetAsync("/api/administrators?page=1");
+        var json = await response.Content.ReadAsStringAsync();
+
+        using var document = System.Text.Json.JsonDocument.Parse(json);
+        var item = document.RootElement.GetProperty("items")[0];
+        var fields = item.EnumerateObject().Select(p => p.Name).ToList();
+        Assert.Equal(["id", "username", "createdAt"], fields);
     }
 
     [Fact]
@@ -331,8 +392,8 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var client = await CreateAuthenticatedClientAsync();
         const string email = "race-create-admin@example.com";
 
-        var task1 = client.PostAsJsonAsync("/api/administrators", new { email, password = ValidPassword });
-        var task2 = client.PostAsJsonAsync("/api/administrators", new { email, password = ValidPassword });
+        var task1 = client.PostAsJsonAsync("/api/administrators", new { username = email, email, password = ValidPassword });
+        var task2 = client.PostAsJsonAsync("/api/administrators", new { username = email, email, password = ValidPassword });
         var responses = await Task.WhenAll(task1, task2);
 
         Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.OK));
@@ -473,7 +534,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<AdministratorResponseDto>();
-        Assert.Equal(AdminEmail, body!.Email);
+        Assert.Equal(AdminEmail, body!.Username);
     }
 
     [Fact]
@@ -486,7 +547,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var loginClient = Factory.CreateClient();
         var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = AdminEmail,
+            username = AdminEmail,
             password = newPassword
         });
 
@@ -502,7 +563,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var loginClient = Factory.CreateClient();
         var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = AdminEmail,
+            username = AdminEmail,
             password = AdminPassword // the original password from IntegrationTestBase seeding
         });
 
@@ -541,8 +602,8 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
         // Exactly one of the two passwords must now be the valid one — confirm by trying both.
         var loginClient = Factory.CreateClient();
-        var loginA = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = passwordA });
-        var loginB = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = passwordB });
+        var loginA = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { username = AdminEmail, password = passwordA });
+        var loginB = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { username = AdminEmail, password = passwordB });
 
         var successes = new[] { loginA.StatusCode, loginB.StatusCode }.Count(s => s == HttpStatusCode.OK);
         Assert.Equal(1, successes);
@@ -565,8 +626,8 @@ public class AdministratorsControllerTests : IntegrationTestBase
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
 
         var loginClient = Factory.CreateClient();
-        var loginAWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = AdminEmail, password = adminANewPassword });
-        var loginBWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { email = adminBEmail, password = adminBNewPassword });
+        var loginAWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { username = AdminEmail, password = adminANewPassword });
+        var loginBWithNew = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new { username = adminBEmail, password = adminBNewPassword });
 
         Assert.Equal(HttpStatusCode.OK, loginAWithNew.StatusCode);
         Assert.Equal(HttpStatusCode.OK, loginBWithNew.StatusCode);

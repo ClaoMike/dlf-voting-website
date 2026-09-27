@@ -17,7 +17,7 @@ public class UserAuthControllerTests : IntegrationTestBase
 
         var response = await client.PostAsJsonAsync("/api/auth/user/login", new
         {
-            email = UserEmail,
+            username = UserUsername,
             password = UserPassword
         });
 
@@ -32,7 +32,7 @@ public class UserAuthControllerTests : IntegrationTestBase
 
         var response = await client.PostAsJsonAsync("/api/auth/user/login", new
         {
-            email = UserEmail,
+            username = UserUsername,
             password = "wrong-password"
         });
 
@@ -40,14 +40,44 @@ public class UserAuthControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Login_WithUnknownEmail_ReturnsUnauthorized()
+    public async Task Login_WithUnknownUsername_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/auth/user/login", new
         {
-            email = "nobody@example.com",
+            username = "nobody-at-all",
             password = "whatever"
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_UsernameIsCaseInsensitive()
+    {
+        var client = Factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/user/login", new
+        {
+            username = UserUsername.ToUpperInvariant(),
+            password = UserPassword
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
+        Assert.Equal(UserUsername, body?["username"]);
+    }
+
+    [Fact]
+    public async Task Login_WithEmailInsteadOfUsername_ReturnsUnauthorized()
+    {
+        var client = Factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/user/login", new
+        {
+            username = UserEmail,
+            password = UserPassword
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -62,14 +92,15 @@ public class UserAuthControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task Me_AfterLogin_ReturnsUserEmail()
+    public async Task Me_AfterLogin_ReturnsUsernameAndEmail()
     {
         var client = await CreateAuthenticatedUserClientAsync();
 
         var response = await client.GetAsync("/api/auth/user/me");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string?>>();
+        Assert.Equal(UserUsername, body?["username"]);
         Assert.Equal(UserEmail, body?["email"]);
     }
 

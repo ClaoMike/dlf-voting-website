@@ -28,20 +28,20 @@ public class VoteStatsControllerTests : IntegrationTestBase
         return body!.Id;
     }
 
-    private async Task<HttpClient> CreateAndLoginUserAsync(string email, string password)
+    private async Task<HttpClient> CreateAndLoginUserAsync(string username, string password)
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
+            Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             CreatedAt = DateTime.UtcNow
         });
         await db.SaveChangesAsync();
 
-        return await CreateAuthenticatedUserClientAsync(email, password);
+        return await CreateAuthenticatedUserClientAsync(username, password);
     }
 
     // --- Auth ---
@@ -90,8 +90,8 @@ public class VoteStatsControllerTests : IntegrationTestBase
     public async Task GetStats_TotalUsers_ReflectsAllUsersRegardlessOfVoting()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        await CreateAndLoginUserAsync("stats-user-1@example.com", "SomeValidPassword1!@#");
-        await CreateAndLoginUserAsync("stats-user-2@example.com", "SomeValidPassword2!@#");
+        await CreateAndLoginUserAsync("stats-user-1", "SomeValidPassword1!@#");
+        await CreateAndLoginUserAsync("stats-user-2", "SomeValidPassword2!@#");
 
         var response = await adminClient.GetAsync("/api/votes/stats");
         var body = await response.Content.ReadFromJsonAsync<VoteStatsResponseDto>();
@@ -107,9 +107,9 @@ public class VoteStatsControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Stats Option");
 
-        var voter1 = await CreateAndLoginUserAsync("stats-voter-1@example.com", "SomeValidPassword1!@#");
-        var voter2 = await CreateAndLoginUserAsync("stats-voter-2@example.com", "SomeValidPassword2!@#");
-        await CreateAndLoginUserAsync("stats-nonvoter@example.com", "SomeValidPassword3!@#");
+        var voter1 = await CreateAndLoginUserAsync("stats-voter-1", "SomeValidPassword1!@#");
+        var voter2 = await CreateAndLoginUserAsync("stats-voter-2", "SomeValidPassword2!@#");
+        await CreateAndLoginUserAsync("stats-nonvoter", "SomeValidPassword3!@#");
 
         await voter1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         await voter2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
@@ -127,7 +127,7 @@ public class VoteStatsControllerTests : IntegrationTestBase
         var votedOptionId = await CreateVotingOptionAsync(adminClient, "Voted Option");
         var unvotedOptionId = await CreateVotingOptionAsync(adminClient, "Unvoted Option");
 
-        var voter = await CreateAndLoginUserAsync("zero-votes-check@example.com", "SomeValidPassword1!@#");
+        var voter = await CreateAndLoginUserAsync("zero-votes-check", "SomeValidPassword1!@#");
         await voter.PostAsJsonAsync("/api/votes", new { votingOptionId = votedOptionId });
 
         var response = await adminClient.GetAsync("/api/votes/stats");
@@ -151,7 +151,7 @@ public class VoteStatsControllerTests : IntegrationTestBase
         var voters = new List<HttpClient>();
         for (var i = 0; i < 5; i++)
         {
-            voters.Add(await CreateAndLoginUserAsync($"sort-voter-{i}@example.com", "SomeValidPassword1!@#"));
+            voters.Add(await CreateAndLoginUserAsync($"sort-voter-{i}", "SomeValidPassword1!@#"));
         }
 
         // 1 vote for lowOption, 2 for midOption, ... wait, keep it simple:
@@ -178,7 +178,7 @@ public class VoteStatsControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionA = await CreateVotingOptionAsync(adminClient, "Change Stats A");
         var optionB = await CreateVotingOptionAsync(adminClient, "Change Stats B");
-        var voter = await CreateAndLoginUserAsync("stats-change-voter@example.com", "SomeValidPassword1!@#");
+        var voter = await CreateAndLoginUserAsync("stats-change-voter", "SomeValidPassword1!@#");
 
         await voter.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
 
@@ -202,13 +202,13 @@ public class VoteStatsControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Removal Stats Option");
-        var voter = await CreateAndLoginUserAsync("stats-removal-voter@example.com", "SomeValidPassword1!@#");
+        var voter = await CreateAndLoginUserAsync("stats-removal-voter", "SomeValidPassword1!@#");
         await voter.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
         using (var scope = Factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-            var user = await db.Users.FirstAsync(u => u.Email == "stats-removal-voter@example.com");
+            var user = await db.Users.FirstAsync(u => u.Username == "stats-removal-voter");
             await adminClient.DeleteAsync($"/api/votes/{user.Id}");
         }
 

@@ -12,7 +12,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
     // ReSharper disable once ClassNeverInstantiated.Local
     // ReSharper disable once NotAccessedPositionalProperty.Local
-    private record AdminVoteResponseDto(Guid UserId, string Email, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
+    private record AdminVoteResponseDto(Guid UserId, string Username, string? FirstName, string? LastName, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
     private record PagedVotesResponseDto(List<AdminVoteResponseDto> Items, int TotalCount, int Page, int PageSize);
     
     // ReSharper disable once ConvertToPrimaryConstructor
@@ -28,21 +28,21 @@ public class AdminVotesControllerTests : IntegrationTestBase
         return body!.Id;
     }
 
-    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string email, string password)
+    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string username, string password)
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
+            Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             CreatedAt = DateTime.UtcNow
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var client = await CreateAuthenticatedUserClientAsync(email, password);
+        var client = await CreateAuthenticatedUserClientAsync(username, password);
         return (user.Id, client);
     }
 
@@ -119,36 +119,36 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Sorted Option");
 
-        var (_, voterClient) = await CreateAndLoginUserAsync("zzz-voter@example.com", "SomeValidPassword1!@#");
+        var (_, voterClient) = await CreateAndLoginUserAsync("zzz-voter", "SomeValidPassword1!@#");
         await voterClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
-        await CreateAndLoginUserAsync("aaa-nonvoter@example.com", "SomeValidPassword2!@#");
+        await CreateAndLoginUserAsync("aaa-nonvoter", "SomeValidPassword2!@#");
 
         var response = await adminClient.GetAsync("/api/votes");
         var body = await response.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
 
-        // +1 accounts for the base seeded test user (UserEmail) from IntegrationTestBase, who never voted here.
+        // +1 accounts for the base seeded test user (UserUsername) from IntegrationTestBase, who never voted here.
         Assert.Equal(3, body!.TotalCount);
 
-        var voterRow = body.Items.Single(v => v.Email == "zzz-voter@example.com");
+        var voterRow = body.Items.Single(v => v.Username == "zzz-voter");
         Assert.Equal(optionId, voterRow.VotingOptionId);
         Assert.Equal("Sorted Option", voterRow.VotingOptionName);
 
-        var nonVoterRow = body.Items.Single(v => v.Email == "aaa-nonvoter@example.com");
+        var nonVoterRow = body.Items.Single(v => v.Username == "aaa-nonvoter");
         Assert.Null(nonVoterRow.VotingOptionId);
         Assert.Null(nonVoterRow.VotingOptionName);
         Assert.Null(nonVoterRow.UpdatedAt);
     }
 
     [Fact]
-    public async Task GetAllPaged_ReturnsUpTo25ItemsSortedByEmail()
+    public async Task GetAllPaged_ReturnsUpTo25ItemsSortedByUsername()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Bulk Option");
 
         for (var i = 0; i < 30; i++)
         {
-            var (_, client) = await CreateAndLoginUserAsync($"voter{i:D2}@example.com", "SomeValidPassword1!@#");
+            var (_, client) = await CreateAndLoginUserAsync($"voter{i:D2}", "SomeValidPassword1!@#");
             await client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         }
 
@@ -160,9 +160,57 @@ public class AdminVotesControllerTests : IntegrationTestBase
         Assert.Equal(25, body.PageSize);
         Assert.Equal(25, body.Items.Count);
 
-        var emails = body.Items.Select(v => v.Email).ToList();
-        var expected = emails.OrderBy(e => e, StringComparer.Ordinal).ToList();
-        Assert.Equal(expected, emails);
+        var usernames = body.Items.Select(v => v.Username).ToList();
+        var expected = usernames.OrderBy(u => u, StringComparer.Ordinal).ToList();
+        Assert.Equal(expected, usernames);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetAllPaged_IsSortedByName_WithDanishLettersLast(bool onlyVoted)
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionId = await CreateVotingOptionAsync(adminClient, "Name Sort Option");
+
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+            (string Username, string First, string Last)[] people =
+            [
+                ("sort-aase", "Åse", "Berg"),
+                ("sort-zenia", "Zenia", "Dahl"),
+                ("sort-anders", "anders", "Holm"),
+                ("sort-oersted", "Ørsted", "Lund"),
+            ];
+            foreach (var (username, first, last) in people)
+            {
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Username = username,
+                    FirstName = first,
+                    LastName = last,
+                    PasswordHash = "not-used",
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.Users.Add(user);
+                db.Votes.Add(new Vote { Id = Guid.NewGuid(), UserId = user.Id, VotingOptionId = optionId, UpdatedAt = DateTime.UtcNow });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var response = await adminClient.GetAsync($"/api/votes?onlyVoted={onlyVoted}");
+        var body = await response.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
+
+        var names = body!.Items.Where(v => v.FirstName is not null).Select(v => $"{v.FirstName} {v.LastName}").ToList();
+        Assert.Equal(["anders Holm", "Zenia Dahl", "Ørsted Lund", "Åse Berg"], names);
+
+        if (!onlyVoted)
+        {
+            // The seeded test user has no name and never voted: listed after everyone with a name.
+            Assert.Equal(UserUsername, body.Items.Last().Username);
+        }
     }
 
     [Fact]
@@ -173,7 +221,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
 
         for (var i = 0; i < 30; i++)
         {
-            var (_, client) = await CreateAndLoginUserAsync($"page2voter{i:D2}@example.com", "SomeValidPassword1!@#");
+            var (_, client) = await CreateAndLoginUserAsync($"page2voter{i:D2}", "SomeValidPassword1!@#");
             await client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         }
 
@@ -192,7 +240,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Admin Assigned");
-        var (userId, _) = await CreateAndLoginUserAsync("no-vote-yet@example.com", "SomeValidPassword1!@#");
+        var (userId, _) = await CreateAndLoginUserAsync("no-vote-yet", "SomeValidPassword1!@#");
 
         var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
 
@@ -207,7 +255,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionA = await CreateVotingOptionAsync(adminClient, "Admin Update A");
         var optionB = await CreateVotingOptionAsync(adminClient, "Admin Update B");
-        var (userId, userClient) = await CreateAndLoginUserAsync("existing-vote@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("existing-vote", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
 
         var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionB });
@@ -238,7 +286,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     public async Task AdminSetVote_ForNonexistentOption_ReturnsNotFound()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var (userId, _) = await CreateAndLoginUserAsync("bad-option-target@example.com", "SomeValidPassword1!@#");
+        var (userId, _) = await CreateAndLoginUserAsync("bad-option-target", "SomeValidPassword1!@#");
 
         var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = Guid.NewGuid() });
 
@@ -252,7 +300,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "To Be Removed By Admin");
-        var (userId, userClient) = await CreateAndLoginUserAsync("delete-target@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("delete-target", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
         var response = await adminClient.DeleteAsync($"/api/votes/{userId}");
@@ -265,7 +313,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     public async Task AdminDeleteVote_ForUserWhoNeverVoted_ReturnsNotFound()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var (userId, _) = await CreateAndLoginUserAsync("never-voted@example.com", "SomeValidPassword1!@#");
+        var (userId, _) = await CreateAndLoginUserAsync("never-voted", "SomeValidPassword1!@#");
 
         var response = await adminClient.DeleteAsync($"/api/votes/{userId}");
 
@@ -277,7 +325,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Double Delete By Admin");
-        var (userId, userClient) = await CreateAndLoginUserAsync("admin-double-delete@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("admin-double-delete", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         await adminClient.DeleteAsync($"/api/votes/{userId}");
 
@@ -294,7 +342,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionA = await CreateVotingOptionAsync(adminClient, "Contested Admin A");
         var optionB = await CreateVotingOptionAsync(adminClient, "Contested Admin B");
-        var (userId, userClient) = await CreateAndLoginUserAsync("contested-by-both@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("contested-by-both", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
 
         // The user changes their own vote to B while the admin simultaneously sets it to A again.
@@ -316,7 +364,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Edit Delete Race");
-        var (userId, userClient) = await CreateAndLoginUserAsync("edit-delete-race@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("edit-delete-race", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
         var editTask = adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
@@ -342,8 +390,8 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Bulk Admin Delete Target");
 
-        var (user1Id, client1) = await CreateAndLoginUserAsync("bulk-admin-del-1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("bulk-admin-del-2@example.com", "SomeValidPassword2!@#");
+        var (user1Id, client1) = await CreateAndLoginUserAsync("bulk-admin-del-1", "SomeValidPassword1!@#");
+        var (user2Id, client2) = await CreateAndLoginUserAsync("bulk-admin-del-2", "SomeValidPassword2!@#");
         await client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         await client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
@@ -362,7 +410,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient1 = await CreateAuthenticatedClientAsync();
         var optionA = await CreateVotingOptionAsync(adminClient1, "Two Admins A");
         var optionB = await CreateVotingOptionAsync(adminClient1, "Two Admins B");
-        var (userId, userClient) = await CreateAndLoginUserAsync("two-admins-target@example.com", "SomeValidPassword1!@#");
+        var (userId, userClient) = await CreateAndLoginUserAsync("two-admins-target", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
 
         const string secondAdminEmail = "second-admin-vote-test@example.com";
@@ -374,6 +422,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
             db.Administrators.Add(new Administrator
             {
                 Id = Guid.NewGuid(),
+                Username = secondAdminEmail,
                 Email = secondAdminEmail,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(secondAdminPassword),
                 CreatedAt = DateTime.UtcNow
@@ -384,7 +433,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var loginClient = Factory.CreateClient();
         var loginResponse = await loginClient.PostAsJsonAsync("/api/auth/admin/login", new
         {
-            email = secondAdminEmail,
+            username = secondAdminEmail,
             password = secondAdminPassword
         });
         var cookie = loginResponse.Headers.GetValues("Set-Cookie").First().Split(';')[0];
@@ -414,17 +463,17 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Only Voted Filter Option");
 
-        var (_, voterClient) = await CreateAndLoginUserAsync("filter-voter@example.com", "SomeValidPassword1!@#");
+        var (_, voterClient) = await CreateAndLoginUserAsync("filter-voter", "SomeValidPassword1!@#");
         await voterClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
-        await CreateAndLoginUserAsync("filter-nonvoter@example.com", "SomeValidPassword2!@#");
+        await CreateAndLoginUserAsync("filter-nonvoter", "SomeValidPassword2!@#");
 
         var response = await adminClient.GetAsync("/api/votes?onlyVoted=true");
         var body = await response.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
 
         Assert.Equal(1, body!.TotalCount);
-        Assert.Single(body.Items, v => v.Email == "filter-voter@example.com");
-        Assert.DoesNotContain(body.Items, v => v.Email == "filter-nonvoter@example.com");
+        Assert.Single(body.Items, v => v.Username == "filter-voter");
+        Assert.DoesNotContain(body.Items, v => v.Username == "filter-nonvoter");
     }
 
     [Fact]
@@ -432,7 +481,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         await CreateVotingOptionAsync(adminClient, "Explicit False Option");
-        await CreateAndLoginUserAsync("explicit-false-nonvoter@example.com", "SomeValidPassword1!@#");
+        await CreateAndLoginUserAsync("nonvoter-explicit", "SomeValidPassword1!@#");
 
         var defaultResponse = await adminClient.GetAsync("/api/votes");
         var explicitResponse = await adminClient.GetAsync("/api/votes?onlyVoted=false");

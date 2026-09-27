@@ -26,21 +26,21 @@ public class VotesControllerTests : IntegrationTestBase
         return body!.Id;
     }
 
-    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string email, string password)
+    private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string username, string password)
     {
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Email = email,
+            Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             CreatedAt = DateTime.UtcNow
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var client = await CreateAuthenticatedUserClientAsync(email, password);
+        var client = await CreateAuthenticatedUserClientAsync(username, password);
         return (user.Id, client);
     }
 
@@ -160,7 +160,7 @@ public class VotesControllerTests : IntegrationTestBase
 
         using var verifyScope = Factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var seededUser = await verifyDb.Users.FirstAsync(u => u.Email == UserEmail);
+        var seededUser = await verifyDb.Users.FirstAsync(u => u.Username == UserUsername);
         var voteCount = await verifyDb.Votes.CountAsync(v => v.UserId == seededUser.Id);
 
         Assert.Equal(1, voteCount);
@@ -182,7 +182,7 @@ public class VotesControllerTests : IntegrationTestBase
 
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var seededUser = await db.Users.FirstAsync(u => u.Email == UserEmail);
+        var seededUser = await db.Users.FirstAsync(u => u.Username == UserUsername);
         var votes = await db.Votes.Where(v => v.UserId == seededUser.Id).ToListAsync();
 
         Assert.Single(votes);
@@ -221,8 +221,8 @@ public class VotesControllerTests : IntegrationTestBase
     public async Task TwoDifferentUsers_CanVoteForTheSameOption()
     {
         var optionId = await CreateVotingOptionAsync("Popular Choice");
-        var (_, client1) = await CreateAndLoginUserAsync("voter1@example.com", "SomeValidPassword1!@#");
-        var (_, client2) = await CreateAndLoginUserAsync("voter2@example.com", "SomeValidPassword2!@#");
+        var (_, client1) = await CreateAndLoginUserAsync("voter1", "SomeValidPassword1!@#");
+        var (_, client2) = await CreateAndLoginUserAsync("voter2", "SomeValidPassword2!@#");
 
         var response1 = await client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         var response2 = await client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
@@ -241,8 +241,8 @@ public class VotesControllerTests : IntegrationTestBase
     {
         var optionA = await CreateVotingOptionAsync("Choice A");
         var optionB = await CreateVotingOptionAsync("Choice B");
-        var (user1Id, client1) = await CreateAndLoginUserAsync("independent1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("independent2@example.com", "SomeValidPassword2!@#");
+        var (user1Id, client1) = await CreateAndLoginUserAsync("independent1", "SomeValidPassword1!@#");
+        var (user2Id, client2) = await CreateAndLoginUserAsync("independent2", "SomeValidPassword2!@#");
 
         await client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
         await client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
@@ -260,7 +260,7 @@ public class VotesControllerTests : IntegrationTestBase
     public async Task ConcurrentCastVote_SameUserSameOption_ResultsInExactlyOneVoteRow()
     {
         var optionId = await CreateVotingOptionAsync("Race Target");
-        var (userId, client) = await CreateAndLoginUserAsync("race-same-option@example.com", "SomeValidPassword1!@#");
+        var (userId, client) = await CreateAndLoginUserAsync("race-same-option", "SomeValidPassword1!@#");
 
         var task1 = client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         var task2 = client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
@@ -283,7 +283,7 @@ public class VotesControllerTests : IntegrationTestBase
     {
         var optionA = await CreateVotingOptionAsync("Race Option A");
         var optionB = await CreateVotingOptionAsync("Race Option B");
-        var (userId, client) = await CreateAndLoginUserAsync("race-diff-options@example.com", "SomeValidPassword1!@#");
+        var (userId, client) = await CreateAndLoginUserAsync("race-diff-options", "SomeValidPassword1!@#");
 
         var task1 = client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
         var task2 = client.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
@@ -307,9 +307,9 @@ public class VotesControllerTests : IntegrationTestBase
     {
         var optionId = await CreateVotingOptionAsync("Everyone's Favorite");
 
-        var (user1Id, client1) = await CreateAndLoginUserAsync("multi-same-1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("multi-same-2@example.com", "SomeValidPassword2!@#");
-        var (user3Id, client3) = await CreateAndLoginUserAsync("multi-same-3@example.com", "SomeValidPassword3!@#");
+        var (user1Id, client1) = await CreateAndLoginUserAsync("multi-same-1", "SomeValidPassword1!@#");
+        var (user2Id, client2) = await CreateAndLoginUserAsync("multi-same-2", "SomeValidPassword2!@#");
+        var (user3Id, client3) = await CreateAndLoginUserAsync("multi-same-3", "SomeValidPassword3!@#");
 
         var task1 = client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         var task2 = client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
@@ -337,9 +337,9 @@ public class VotesControllerTests : IntegrationTestBase
         var optionB = await CreateVotingOptionAsync("Multi Option B");
         var optionC = await CreateVotingOptionAsync("Multi Option C");
 
-        var (user1Id, client1) = await CreateAndLoginUserAsync("multi-diff-1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("multi-diff-2@example.com", "SomeValidPassword2!@#");
-        var (user3Id, client3) = await CreateAndLoginUserAsync("multi-diff-3@example.com", "SomeValidPassword3!@#");
+        var (user1Id, client1) = await CreateAndLoginUserAsync("multi-diff-1", "SomeValidPassword1!@#");
+        var (user2Id, client2) = await CreateAndLoginUserAsync("multi-diff-2", "SomeValidPassword2!@#");
+        var (user3Id, client3) = await CreateAndLoginUserAsync("multi-diff-3", "SomeValidPassword3!@#");
 
         var task1 = client1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
         var task2 = client2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
@@ -365,11 +365,11 @@ public class VotesControllerTests : IntegrationTestBase
         var optionA = await CreateVotingOptionAsync("Stress Option A");
         var optionB = await CreateVotingOptionAsync("Stress Option B");
 
-        var (user1Id, client1) = await CreateAndLoginUserAsync("stress-1@example.com", "SomeValidPassword1!@#");
-        var (user2Id, client2) = await CreateAndLoginUserAsync("stress-2@example.com", "SomeValidPassword2!@#");
-        var (user3Id, client3) = await CreateAndLoginUserAsync("stress-3@example.com", "SomeValidPassword3!@#");
-        var (user4Id, client4) = await CreateAndLoginUserAsync("stress-4@example.com", "SomeValidPassword4!@#");
-        var (user5Id, client5) = await CreateAndLoginUserAsync("stress-5@example.com", "SomeValidPassword5!@#");
+        var (user1Id, client1) = await CreateAndLoginUserAsync("stress-1", "SomeValidPassword1!@#");
+        var (user2Id, client2) = await CreateAndLoginUserAsync("stress-2", "SomeValidPassword2!@#");
+        var (user3Id, client3) = await CreateAndLoginUserAsync("stress-3", "SomeValidPassword3!@#");
+        var (user4Id, client4) = await CreateAndLoginUserAsync("stress-4", "SomeValidPassword4!@#");
+        var (user5Id, client5) = await CreateAndLoginUserAsync("stress-5", "SomeValidPassword5!@#");
 
         var tasks = new[]
         {
