@@ -7,6 +7,7 @@ import SessionTimeoutDialog from '../SessionTimeoutDialog/SessionTimeoutDialog'
 import SidebarHeader from './SidebarHeader'
 import AdminNav from './AdminNav'
 import SidebarAuthActions from './SidebarAuthActions'
+import GrassBand from '../Decor/GrassBand'
 import { VOTING_SYSTEM_WEBSITE_TITLE } from '../../constants/strings'
 import './Layout.css'
 
@@ -21,6 +22,9 @@ const PAGE_TITLES: Record<string, string> = {
     '/admin/administrators': 'Administrators',
     '/admin/settings': 'Settings',
 }
+
+// The voter pages (sign in and voting) get a strip of grass along the bottom, under the sidebar too.
+const GRASS_PATHS = new Set(['/', '/login', '/login/admin', '/welcome'])
 
 function Layout() {
     const admin = useAdminAuth()
@@ -97,6 +101,7 @@ function Layout() {
             <main id="main" className="app-content" tabIndex={-1}>
                 <Outlet />
             </main>
+            {GRASS_PATHS.has(location.pathname) && <GrassBand />}
 
             {expiringSession && (
                 <SessionTimeoutDialog

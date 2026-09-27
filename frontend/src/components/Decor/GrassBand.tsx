@@ -23,17 +23,21 @@ const BLADES = TONES.flatMap((_, row) => {
         const tipY = HEIGHT - height
         const d = `M${x - base} ${HEIGHT} Q${x - base / 2 + lean / 3} ${HEIGHT - height / 2} ${tipX} ${tipY} ` +
             `Q${x + base / 2 + lean / 3} ${HEIGHT - height / 2} ${x + base} ${HEIGHT} Z`
-        return { d, fill: TONES[layer] }
+        return { d, fill: TONES[layer], tipY }
     })
 })
 
-/** Decorative strip of grass for the bottom of the voter pages. */
+// The tallest blades rise above HEIGHT, so start the view at the highest tip to keep every blade whole.
+const TOP = Math.floor(Math.min(0, ...BLADES.map((blade) => blade.tipY)))
+
+/** Decorative strip of grass along the bottom of the voter pages; it scales with the width, never cropped. */
 function GrassBand() {
     return (
         <svg
             className="grass-band"
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            preserveAspectRatio="xMidYMax slice"
+            viewBox={`0 ${TOP} ${WIDTH} ${HEIGHT - TOP}`}
+            preserveAspectRatio="none"
+            style={{ aspectRatio: `${WIDTH} / ${HEIGHT - TOP}` }}
             aria-hidden="true"
             focusable="false"
         >

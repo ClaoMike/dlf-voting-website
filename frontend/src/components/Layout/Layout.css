@@ -1,19 +1,24 @@
+/* Sidebar and page side by side; the grass band (voter pages only) runs under both, edge to edge. */
 .app-shell {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
     min-height: 100vh;
     background-color: #ffffff;
 }
 
+.app-shell > .grass-band {
+    grid-column: 1 / -1;
+}
+
 .app-content {
-    /* Pages that bleed to the edges (the grass band) use this to undo the padding. */
     --content-padding: 2rem;
-    flex: 1;
     min-width: 0;
     padding: var(--content-padding);
     box-sizing: border-box;
 }
 
-/* The voter pages stretch to the bottom of the content area (their grass band sits on the edge). */
+/* The voter pages stretch to the bottom of the content area, just above the grass. */
 .app-content:has(> .login-page, > .welcome-page) {
     display: flex;
     flex-direction: column;
@@ -139,7 +144,8 @@
 /* Phones and small tablets: the sidebar becomes a compact bar above the page. */
 @media (max-width: 768px) {
     .app-shell {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto 1fr auto;
     }
 
     .app-content {

@@ -1,10 +1,9 @@
-/* Full-height column: greeting, ballot card, grass along the bottom edge. */
+/* Full-height column: greeting, then the ballot card. */
 .welcome-page {
     display: flex;
     flex-direction: column;
     align-items: center;
     flex: 1;
-    margin-bottom: calc(-1 * var(--content-padding));
 }
 
 .welcome-header {
@@ -108,16 +107,6 @@
 .vote-button-secondary:hover {
     background-color: var(--accent-soft);
     filter: none;
-}
-
-.welcome-page .grass-band {
-    margin-top: auto;
-    padding-top: 2.5rem;
-    /* Bleed past the content padding so the grass meets the edges. */
-    /* An <svg> won't stretch like a block, so give it the width explicitly. */
-    width: calc(100% + 2 * var(--content-padding));
-    margin-left: calc(-1 * var(--content-padding));
-    margin-right: calc(-1 * var(--content-padding));
 }
 
 @media (max-width: 768px) {

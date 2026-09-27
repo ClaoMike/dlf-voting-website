@@ -1,6 +1,5 @@
 import { useState, type SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import GrassBand from '../Decor/GrassBand'
 import { VOTING_SYSTEM_WEBSITE_TITLE } from '../../constants/strings'
 import './LoginForm.css'
 
@@ -110,7 +109,6 @@ function LoginForm({ title, intro, notice, login, redirectTo }: LoginFormProps) 
             <p className="login-facts">
                 Owned by Danish farmers since 1906 · Grass and clover seed for more than 100 countries
             </p>
-            <GrassBand />
         </div>
     )
 }

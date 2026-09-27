@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useUserAuth } from '../../context/UserAuthContext'
 import EditVoteDialog from '../../components/EditVoteDialog'
-import GrassBand from '../../components/Decor/GrassBand'
 import VotingSection from './VotingSection'
 import { useVotingData } from './useVotingData'
 
@@ -63,8 +62,6 @@ function Welcome() {
                     onEditVoteClick={() => setShowEditVote(true)}
                 />
             </section>
-
-            <GrassBand />
 
             {showEditVote && data.myVote?.votingOptionId && (
                 <EditVoteDialog
