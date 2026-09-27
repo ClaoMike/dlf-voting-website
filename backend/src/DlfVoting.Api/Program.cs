@@ -1,4 +1,6 @@
 using DlfVoting.Api;
+using DlfVoting.Api.Imports;
+using DlfVoting.Api.Services;
 using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +11,14 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<DlfVotingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<UserQueryService>();
+builder.Services.AddScoped<UserAccountService>();
+builder.Services.AddScoped<AdministratorService>();
+builder.Services.AddScoped<VoteService>();
+builder.Services.AddScoped<VoteReportService>();
+builder.Services.AddScoped<EmailImportService>();
+builder.Services.AddScoped<EmployeeImportService>();
 
 builder.Services.AddAuthentication(AuthSchemes.Admin)
     .AddCookie(AuthSchemes.Admin, options =>
