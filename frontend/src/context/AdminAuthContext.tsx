@@ -1,10 +1,13 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive'
 
 type LoginResult = { success: boolean; error?: string }
 
 type AdminAuthContextType = {
     isAuthenticated: boolean
     isLoading: boolean
+    // True when the session ended because of inactivity (the login page says so).
+    sessionExpired: boolean
     username: string | null
     login: (username: string, password: string) => Promise<LoginResult>
     logout: () => Promise<void>
@@ -15,6 +18,7 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [sessionExpired, setSessionExpired] = useState(false)
     const [username, setUsername] = useState<string | null>(null)
 
     const checkSession = async () => {
@@ -40,6 +44,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         void checkSession()
     }, [])
 
+    const handleExpired = useCallback(() => {
+        setIsAuthenticated(false)
+        setSessionExpired(true)
+    }, [])
+
+    useSessionKeepAlive(isAuthenticated, 'http://localhost:5120/api/auth/admin/refresh', handleExpired)
+
     const login = async (loginUsername: string, password: string): Promise<LoginResult> => {
         const res = await fetch('http://localhost:5120/api/auth/admin/login', {
             method: 'POST',
@@ -52,6 +63,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             return { success: false, error: 'Invalid username or password.' }
         }
 
+        setSessionExpired(false)
         // Use the stored username rather than what was typed, since login is case-insensitive.
         const body = await res.json()
         setUsername(body.username)
@@ -69,7 +81,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AdminAuthContext.Provider value={{ isAuthenticated, isLoading, username, login, logout }}>
+        <AdminAuthContext.Provider value={{ isAuthenticated, isLoading, sessionExpired, username, login, logout }}>
             {children}
         </AdminAuthContext.Provider>
     )

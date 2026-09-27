@@ -29,6 +29,7 @@ public class AuthorizationMatrixTests : IntegrationTestBase
     public static TheoryData<string, string> AdminOnlyEndpoints => new()
     {
         { "GET", "/api/auth/admin/me" },
+        { "POST", "/api/auth/admin/refresh" },
         { "GET", "/api/users" },
         { "GET", $"/api/users/{Guid.NewGuid()}" },
         { "POST", "/api/users" },
@@ -56,6 +57,7 @@ public class AuthorizationMatrixTests : IntegrationTestBase
     public static TheoryData<string, string> UserOnlyEndpoints => new()
     {
         { "GET", "/api/auth/user/me" },
+        { "POST", "/api/auth/user/refresh" },
         { "GET", "/api/votes/me" },
         { "POST", "/api/votes" },
     };

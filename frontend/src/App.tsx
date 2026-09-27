@@ -9,15 +9,9 @@ import AdminVotingOptions from './pages/admin/AdminVotingOptions/AdminVotingOpti
 import AdminUsers from './pages/admin/AdminUsers/AdminUsers'
 import AdminAdministrators from './pages/admin/AdminAdministrators/AdminAdministrators'
 import AdminSettings from './pages/admin/AdminSettings/AdminSettings'
-import {VOTING_SYSTEM_WEBSITE_TITLE} from "./constants/strings.ts";
-import {useEffect} from "react";
 
+// Page titles are set per route in Layout.
 function App() {
-
-    useEffect(() => {
-        document.title = VOTING_SYSTEM_WEBSITE_TITLE
-    }, [])
-    
     return (
         <Routes>
             <Route element={<Layout />}>

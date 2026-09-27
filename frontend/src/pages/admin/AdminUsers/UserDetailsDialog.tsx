@@ -1,3 +1,5 @@
+import { useId } from 'react'
+import Modal from '../../../components/Modal/Modal'
 import type { User } from './types'
 
 import '../../../components/ConfirmDialog/ConfirmDialog.css'
@@ -14,6 +16,7 @@ function formatDate(isoDate: string) {
 }
 
 function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
+    const titleId = useId()
     const details: [string, string | null][] = [
         ['Username', user.username],
         ['Email', user.email],
@@ -27,28 +30,26 @@ function UserDetailsDialog({ user, onClose }: UserDetailsDialogProps) {
     ]
 
     return (
-        <div className="confirm-dialog-overlay" onClick={onClose}>
-            <div className="confirm-dialog" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-                <h2 className="confirm-dialog-title">User details</h2>
+        <Modal titleId={titleId} onClose={onClose} closeOnBackdropClick>
+            <h2 id={titleId} className="confirm-dialog-title">User details</h2>
 
-                <dl className="user-details-list">
-                    {details
-                        .filter(([, value]) => value)
-                        .map(([label, value]) => (
-                            <div key={label} className="user-details-item">
-                                <dt>{label}</dt>
-                                <dd>{value}</dd>
-                            </div>
-                        ))}
-                </dl>
+            <dl className="user-details-list">
+                {details
+                    .filter(([, value]) => value)
+                    .map(([label, value]) => (
+                        <div key={label} className="user-details-item">
+                            <dt>{label}</dt>
+                            <dd>{value}</dd>
+                        </div>
+                    ))}
+            </dl>
 
-                <div className="confirm-dialog-actions">
-                    <button className="confirm-dialog-confirm" onClick={onClose}>
-                        Close
-                    </button>
-                </div>
+            <div className="confirm-dialog-actions">
+                <button className="confirm-dialog-confirm confirm-dialog-save" onClick={onClose}>
+                    Close
+                </button>
             </div>
-        </div>
+        </Modal>
     )
 }
 

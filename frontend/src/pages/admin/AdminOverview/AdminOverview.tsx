@@ -18,27 +18,35 @@ function AdminOverview() {
         <div className="voting-options-page">
             <h1>Overview</h1>
 
-            {data.stats && <OverviewCharts stats={data.stats} />}
-
-            <OverviewTabs activeTab={data.tab} onTabChange={data.changeTab} />
-
-            {(data.error || actions.error) && (
-                <p className="voting-options-error">{data.error ?? actions.error}</p>
+            {data.stats && (
+                <section className="admin-card" aria-labelledby="overview-results">
+                    <h2 id="overview-results">Results so far</h2>
+                    <OverviewCharts stats={data.stats} />
+                </section>
             )}
 
-            {data.isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <VotesTable
-                    votes={data.votes}
-                    tab={data.tab}
-                    page={data.page}
-                    totalPages={data.totalPages}
-                    onEdit={actions.startEdit}
-                    onDelete={actions.startDelete}
-                    onPageChange={data.goToPage}
-                />
-            )}
+            <section className="admin-card" aria-labelledby="overview-votes">
+                <h2 id="overview-votes">Votes</h2>
+                <OverviewTabs activeTab={data.tab} onTabChange={data.changeTab} />
+
+                {(data.error || actions.error) && (
+                    <p className="voting-options-error" role="alert">{data.error ?? actions.error}</p>
+                )}
+
+                {data.isLoading ? (
+                    <p role="status">Loading…</p>
+                ) : (
+                    <VotesTable
+                        votes={data.votes}
+                        tab={data.tab}
+                        page={data.page}
+                        totalPages={data.totalPages}
+                        onEdit={actions.startEdit}
+                        onDelete={actions.startDelete}
+                        onPageChange={data.goToPage}
+                    />
+                )}
+            </section>
 
             {actions.editingVote && (
                 <EditVoteDialog

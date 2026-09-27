@@ -58,8 +58,8 @@ public class UserAuthController : ControllerBase
 
         await HttpContext.SignInAsync(AuthSchemes.User, principal, new AuthenticationProperties
         {
-            IsPersistent = false,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(5)
+            // Expires after SessionValidation.Lifetime without activity; a browser session cookie otherwise.
+            IsPersistent = false
         });
 
         return Ok(new { username = user.Username, email = user.Email, firstName = user.FirstName, lastName = user.LastName });
@@ -71,6 +71,14 @@ public class UserAuthController : ControllerBase
         await HttpContext.SignOutAsync(AuthSchemes.User);
         return Ok();
     }
+
+    /// <summary>
+    /// Keeps the session alive while the person is active in the browser without calling the API (e.g. reading the
+    /// page). Any authenticated request renews the session; this one exists only to do that.
+    /// </summary>
+    [Authorize(AuthenticationSchemes = AuthSchemes.User)]
+    [HttpPost("refresh")]
+    public IActionResult Refresh() => NoContent();
 
     [Authorize(AuthenticationSchemes = AuthSchemes.User)]
     [HttpGet("me")]

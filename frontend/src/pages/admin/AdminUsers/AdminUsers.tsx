@@ -25,52 +25,54 @@ function AdminUsers() {
         <div className="voting-options-page">
             <h1>Users</h1>
 
-            <UsersActionsRow
-                onAddUser={actions.openCreate}
-                onImportClick={importState.openModeDialog}
-                isImporting={importState.isImporting}
-                fileInputRef={importState.fileInputRef}
-                onFileSelected={importState.handleFileSelected}
-                canRemoveAll={data.users.length > 0}
-                onRemoveAllClick={actions.openRemoveAllConfirm}
-            />
-
-            {importState.importSummary && (
-                <p className="administrators-self-label">
-                    Imported {importState.importSummary.created} user
-                    {importState.importSummary.created === 1 ? '' : 's'}
-                    {importState.importSummary.skipped > 0
-                        ? `, skipped ${importState.importSummary.skipped} (see downloaded file for details)`
-                        : ''}
-                    .
-                </p>
-            )}
-
-            {importState.importSummary && importState.importSummary.warnings.length > 0 && (
-                <ul className="import-warnings">
-                    {importState.importSummary.warnings.map((w) => (
-                        <li key={`${w.row}-${w.message}`}>
-                            Row {w.row}: {w.message}
-                        </li>
-                    ))}
-                </ul>
-            )}
-
-            {displayedError && <p className="voting-options-error">{displayedError}</p>}
-
-            {data.isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <UsersTable
-                    users={data.users}
-                    page={data.page}
-                    totalPages={data.totalPages}
-                    onSelect={actions.selectUser}
-                    onEdit={actions.startEdit}
-                    onDelete={actions.startDelete}
-                    onPageChange={data.fetchUsers}
+            <section className="admin-card" aria-label="Users">
+                <UsersActionsRow
+                    onAddUser={actions.openCreate}
+                    onImportClick={importState.openModeDialog}
+                    isImporting={importState.isImporting}
+                    fileInputRef={importState.fileInputRef}
+                    onFileSelected={importState.handleFileSelected}
+                    canRemoveAll={data.users.length > 0}
+                    onRemoveAllClick={actions.openRemoveAllConfirm}
                 />
-            )}
+
+                {importState.importSummary && (
+                    <p className="import-summary" role="status">
+                        Imported {importState.importSummary.created} user
+                        {importState.importSummary.created === 1 ? '' : 's'}
+                        {importState.importSummary.skipped > 0
+                            ? `, skipped ${importState.importSummary.skipped} (see downloaded file for details)`
+                            : ''}
+                        .
+                    </p>
+                )}
+
+                {importState.importSummary && importState.importSummary.warnings.length > 0 && (
+                    <ul className="import-warnings">
+                        {importState.importSummary.warnings.map((w) => (
+                            <li key={`${w.row}-${w.message}`}>
+                                Row {w.row}: {w.message}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+
+                {displayedError && <p className="voting-options-error" role="alert">{displayedError}</p>}
+
+                {data.isLoading ? (
+                    <p role="status">Loading…</p>
+                ) : (
+                    <UsersTable
+                        users={data.users}
+                        page={data.page}
+                        totalPages={data.totalPages}
+                        onSelect={actions.selectUser}
+                        onEdit={actions.startEdit}
+                        onDelete={actions.startDelete}
+                        onPageChange={data.fetchUsers}
+                    />
+                )}
+            </section>
 
             {actions.showCreate && (
                 <CreateUserDialog

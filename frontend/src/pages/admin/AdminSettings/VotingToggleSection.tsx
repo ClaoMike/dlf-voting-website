@@ -6,9 +6,12 @@ type VotingToggleSectionProps = {
 function VotingToggleSection({ isVotingOpen, onToggle }: VotingToggleSectionProps) {
     return (
         <div className="settings-toggle-row">
-      <span className="settings-toggle-label">
-        Voting is currently {isVotingOpen ? 'open' : 'closed'}
-      </span>
+            <p className="settings-toggle-label" role="status">
+                Voting is currently
+                <span className={isVotingOpen ? 'settings-status settings-status-open' : 'settings-status settings-status-closed'}>
+                    {isVotingOpen ? 'open' : 'closed'}
+                </span>
+            </p>
             <button
                 className={
                     isVotingOpen

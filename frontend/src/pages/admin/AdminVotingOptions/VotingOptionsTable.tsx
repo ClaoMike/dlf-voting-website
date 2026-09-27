@@ -8,31 +8,34 @@ type VotingOptionsTableProps = {
 
 function VotingOptionsTable({ options, onEdit, onDelete }: VotingOptionsTableProps) {
     return (
-        <table className="voting-options-table">
-            <thead>
-            <tr>
-                <th>Name</th>
-                <th>Created</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            {options.map((option) => (
-                <tr key={option.id}>
-                    <td>{option.name}</td>
-                    <td>{new Date(option.createdAt).toLocaleDateString()}</td>
-                    <td className="voting-options-actions">
-                        <button className="voting-options-edit" onClick={() => onEdit(option)}>
-                            Edit
-                        </button>
-                        <button className="voting-options-remove" onClick={() => onDelete(option)}>
-                            Remove
-                        </button>
-                    </td>
+        <div className="table-scroll">
+            <table className="voting-options-table">
+                <caption className="visually-hidden">Voting options</caption>
+                <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Created</th>
+                    <th scope="col"><span className="visually-hidden">Actions</span></th>
                 </tr>
-            ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                {options.map((option) => (
+                    <tr key={option.id}>
+                        <td>{option.name}</td>
+                        <td>{new Date(option.createdAt).toLocaleDateString()}</td>
+                        <td className="voting-options-actions">
+                            <button className="voting-options-edit" onClick={() => onEdit(option)}>
+                                Edit<span className="visually-hidden"> {option.name}</span>
+                            </button>
+                            <button className="voting-options-remove" onClick={() => onDelete(option)}>
+                                Remove<span className="visually-hidden"> {option.name}</span>
+                            </button>
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        </div>
     )
 }
 

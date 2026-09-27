@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import Modal from './Modal/Modal'
 import PasswordField from './PasswordField/PasswordField'
 import { isValidEmail, isValidPassword, isValidUsername, USERNAME_MIN_LENGTH } from '../utils/validation'
 
@@ -27,6 +28,11 @@ function CreateUserDialog({
     const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const titleId = useId()
+    const usernameId = useId()
+    const usernameErrorId = useId()
+    const emailId = useId()
+    const emailErrorId = useId()
 
     const trimmedEmail = email.trim()
     const usernameValid = isValidUsername(username, usernameMaxLength)
@@ -34,64 +40,74 @@ function CreateUserDialog({
     const passwordValid = isValidPassword(password)
     const canSubmit = usernameValid && emailValid && passwordValid
 
-    return (
-        <div className="confirm-dialog-overlay">
-            <div className="confirm-dialog" role="dialog" aria-modal="true">
-                <h2 className="confirm-dialog-title">{title}</h2>
+    const showUsernameError = username.length > 0 && !usernameValid
+    const showEmailError = trimmedEmail.length > 0 && !emailValid
 
+    return (
+        <Modal titleId={titleId} onClose={onCancel}>
+            <h2 id={titleId} className="confirm-dialog-title">{title}</h2>
+
+            <div className="dialog-field">
+                <label className="dialog-label" htmlFor={usernameId}>Username</label>
                 <input
+                    id={usernameId}
                     className="confirm-dialog-input"
                     type="text"
                     autoCapitalize="none"
-                    placeholder="Username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    aria-invalid={showUsernameError || undefined}
+                    aria-describedby={usernameErrorId}
                 />
-                {username.length > 0 && !usernameValid && (
-                    <p className="voting-options-error">
-                        Username must be {USERNAME_MIN_LENGTH}-{usernameMaxLength} characters without spaces.
-                    </p>
-                )}
-
-                {emailField === 'required' && (
-                    <>
-                        <input
-                            className="confirm-dialog-input"
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                        {trimmedEmail.length > 0 && !emailValid && (
-                            <p className="voting-options-error">Enter a valid email address.</p>
-                        )}
-                    </>
-                )}
-
-                <PasswordField value={password} onChange={setPassword} />
-                {password.length > 0 && !passwordValid && (
-                    <p className="voting-options-error">
-                        Password must be 20-64 characters with at least one uppercase letter, one digit,
-                        and one special character.
-                    </p>
-                )}
-
-                {error && <p className="voting-options-error">{error}</p>}
-
-                <div className="confirm-dialog-actions">
-                    <button className="confirm-dialog-cancel" onClick={onCancel}>
-                        Cancel
-                    </button>
-                    <button
-                        className="confirm-dialog-confirm confirm-dialog-save"
-                        disabled={!canSubmit}
-                        onClick={() => onCreate(username.trim(), emailField === 'hidden' ? null : trimmedEmail, password)}
-                    >
-                        {submitLabel}
-                    </button>
-                </div>
+                <p id={usernameErrorId} className="dialog-error" aria-live="polite">
+                    {showUsernameError &&
+                        `Username must be ${USERNAME_MIN_LENGTH}-${usernameMaxLength} characters without spaces.`}
+                </p>
             </div>
-        </div>
+
+            {emailField === 'required' && (
+                <div className="dialog-field">
+                    <label className="dialog-label" htmlFor={emailId}>Email</label>
+                    <input
+                        id={emailId}
+                        className="confirm-dialog-input"
+                        type="email"
+                        autoComplete="off"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        aria-invalid={showEmailError || undefined}
+                        aria-describedby={emailErrorId}
+                    />
+                    <p id={emailErrorId} className="dialog-error" aria-live="polite">
+                        {showEmailError && 'Enter a valid email address.'}
+                    </p>
+                </div>
+            )}
+
+            <PasswordField
+                value={password}
+                onChange={setPassword}
+                hint="20-64 characters, with at least one uppercase letter, one digit and one special character."
+            />
+            {password.length > 0 && !passwordValid && (
+                <p className="dialog-error" role="alert">This password does not meet the requirements above.</p>
+            )}
+
+            {error && <p className="dialog-error" role="alert">{error}</p>}
+
+            <div className="confirm-dialog-actions">
+                <button className="confirm-dialog-cancel" onClick={onCancel}>
+                    Cancel
+                </button>
+                <button
+                    className="confirm-dialog-confirm confirm-dialog-save"
+                    disabled={!canSubmit}
+                    onClick={() => onCreate(username.trim(), emailField === 'hidden' ? null : trimmedEmail, password)}
+                >
+                    {submitLabel}
+                </button>
+            </div>
+        </Modal>
     )
 }
 

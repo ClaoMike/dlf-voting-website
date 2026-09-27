@@ -1,45 +1,134 @@
+/* Shared by every admin page (they all use .voting-options-page as their root). */
+
 .voting-options-page {
-    max-width: 600px;
+    max-width: 880px;
+    margin: 0 auto;
 }
 
-.voting-options-add-row {
+.voting-options-page > h1 {
+    margin: 0.5rem 0 1.5rem;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+}
+
+/* White card with the DLF green top edge, as on the voter pages. */
+.admin-card {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--accent);
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: var(--shadow);
+}
+
+.admin-card > h2 {
+    margin: 0 0 1rem;
+    font-size: 1.15rem;
+}
+
+.admin-card-toolbar {
     display: flex;
-    gap: 0.5rem;
-    margin: 1rem 0 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
 }
 
-.voting-options-add-row input {
-    flex: 1;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border, #e5e4e7);
-    border-radius: 4px;
-    font-size: 1rem;
-}
+/* --- Buttons --- */
 
-.voting-options-add-row input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg);
-}
-
+.admin-button,
+.voting-options-add-row-button,
 .voting-options-add-row button {
+    min-height: 44px;
     padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--accent);
+    border: 2px solid var(--accent-strong);
+    border-radius: 6px;
+    background-color: var(--accent-strong);
     color: white;
+    font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
 }
 
-.voting-options-add-row button:disabled {
-    background-color: #d0c3d9;
-    cursor: not-allowed;
+.admin-button:hover,
+.voting-options-add-row-button:hover,
+.voting-options-add-row button:hover {
+    filter: brightness(0.92);
 }
 
+.voting-options-remove-all {
+    min-height: 44px;
+    padding: 0.6rem 1.2rem;
+    border: 2px solid var(--danger);
+    border-radius: 6px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.voting-options-remove-all:hover {
+    background-color: var(--danger-hover);
+    border-color: var(--danger-hover);
+}
+
+/* Push "Remove all" to the far end of a toolbar, away from the everyday buttons. */
+.admin-card-toolbar .voting-options-remove-all {
+    margin-left: auto;
+}
+
+.admin-button:disabled,
+.voting-options-add-row-button:disabled,
+.voting-options-add-row button:disabled,
+.voting-options-remove-all:disabled {
+    border-color: #e4e4e4;
+    background-color: #e4e4e4;
+    color: #6b6b6b;
+    cursor: not-allowed;
+    filter: none;
+}
+
+/* --- Add voting option --- */
+
+.voting-options-add-row {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.voting-options-add-row input {
+    flex: 1;
+    min-width: 180px;
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.voting-options-add-row input:focus {
+    border-color: var(--accent-strong);
+}
+
+/* --- Messages --- */
+
 .voting-options-error {
-    color: var(--danger);
-    margin-bottom: 1rem;
+    margin: 0 0 1rem;
+    color: #c0392b;
+}
+
+/* --- Tables --- */
+
+/* Wide tables scroll sideways on phones instead of squashing or widening the page. */
+.table-scroll {
+    overflow-x: auto;
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem;
 }
 
 .voting-options-table {
@@ -48,62 +137,103 @@
     text-align: left;
 }
 
-.voting-options-table th,
-.voting-options-table td {
-    padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid var(--border, #e5e4e7);
+.voting-options-table th {
+    padding: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
+.voting-options-table td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-h);
+    /* Break only words that can't fit at all (long emails), never names mid-word. */
+    overflow-wrap: break-word;
+}
+
+.voting-options-table tbody tr:hover {
+    background-color: var(--accent-soft);
+}
+
+.voting-options-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Stays a real table cell (a flex <td> breaks the row's borders); the buttons sit inline, right-aligned. */
 .voting-options-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.voting-options-actions > * + * {
+    margin-left: 0.5rem;
 }
 
 .voting-options-actions button {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    border-radius: 4px;
+    min-height: 36px;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid;
+    border-radius: 6px;
+    background-color: white;
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
-    color: white;
-}
-
-.voting-options-remove {
-    background-color: var(--danger);
-}
-
-.voting-options-remove:hover {
-    background-color: var(--danger-hover);
+    white-space: nowrap;
 }
 
 .voting-options-edit {
-    background-color: var(--accent);
+    border-color: var(--accent-strong);
+    color: var(--accent-strong);
 }
 
 .voting-options-edit:hover {
-    filter: brightness(0.9);
+    background-color: var(--accent-soft);
 }
 
-.voting-options-remove-all {
-    display: block;
-    margin-bottom: 1.5rem;
-    padding: 0.5rem 1rem;
+.voting-options-remove {
+    border-color: var(--danger);
+    color: #b82a30;
+}
+
+.voting-options-remove:hover {
+    background-color: var(--danger-bg);
+}
+
+/* A table cell that opens the row's details: looks like text, works as a button. */
+.table-link-button {
+    padding: 0;
     border: none;
-    border-radius: 4px;
-    background-color: var(--danger);
-    color: white;
+    background: none;
+    color: var(--accent-strong);
+    font: inherit;
     font-weight: 600;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 3px;
     cursor: pointer;
-    font-size: 0.85rem;
 }
 
-.voting-options-remove-all:hover {
-    background-color: var(--danger-hover);
-}
+@media (max-width: 768px) {
+    .voting-options-page > h1 {
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+    }
 
-.voting-options-remove-all:disabled {
-    background-color: #d0c3d9;
-    cursor: not-allowed;
+    .admin-card {
+        padding: 1rem;
+    }
+
+    .admin-card-toolbar .voting-options-remove-all {
+        margin-left: 0;
+    }
+
+    .admin-card-toolbar > button,
+    .voting-options-add-row button {
+        flex: 1 1 auto;
+    }
 }

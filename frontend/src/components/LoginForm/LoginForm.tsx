@@ -9,11 +9,13 @@ type LoginResult = { success: boolean; error?: string }
 type LoginFormProps = {
     title: string
     intro?: string
+    // Shown above the form, e.g. after the session ended.
+    notice?: string
     login: (username: string, password: string) => Promise<LoginResult>
     redirectTo: string
 }
 
-function LoginForm({ title, intro, login, redirectTo }: LoginFormProps) {
+function LoginForm({ title, intro, notice, login, redirectTo }: LoginFormProps) {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
@@ -53,6 +55,7 @@ function LoginForm({ title, intro, login, redirectTo }: LoginFormProps) {
                 <p className="login-eyebrow">{VOTING_SYSTEM_WEBSITE_TITLE}</p>
                 <h1 className="login-title">{title}</h1>
                 {intro && <p className="login-intro">{intro}</p>}
+                {notice && <p className="login-notice" role="status">{notice}</p>}
 
                 <form className="login-form" onSubmit={handleSubmit} noValidate>
                     <label htmlFor="username">Username</label>

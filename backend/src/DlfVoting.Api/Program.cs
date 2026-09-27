@@ -28,7 +28,7 @@ builder.Services.AddAuthentication(AuthSchemes.Admin)
     .AddCookie(AuthSchemes.Admin, options =>
     {
         options.Cookie.Name = "DlfVotingAdminAuth";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+        options.ExpireTimeSpan = SessionValidation.Lifetime;
         options.SlidingExpiration = false;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
@@ -43,7 +43,7 @@ builder.Services.AddAuthentication(AuthSchemes.Admin)
     .AddCookie(AuthSchemes.User, options =>
     {
         options.Cookie.Name = "DlfVotingUserAuth";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+        options.ExpireTimeSpan = SessionValidation.Lifetime;
         options.SlidingExpiration = false;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;

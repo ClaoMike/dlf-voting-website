@@ -2,18 +2,20 @@ type ProgressRingProps = {
     value: number
     max: number
     label: string
+    // What the ring shows, for screen readers (e.g. "12 of 70 users have voted").
+    description: string
     size?: number
     strokeWidth?: number
 }
 
-function ProgressRing({ value, max, label, size = 160, strokeWidth = 14 }: ProgressRingProps) {
+function ProgressRing({ value, max, label, description, size = 160, strokeWidth = 14 }: ProgressRingProps) {
     const radius = (size - strokeWidth) / 2
     const circumference = 2 * Math.PI * radius
     const fraction = max > 0 ? Math.min(value / max, 1) : 0
     const offset = circumference * (1 - fraction)
 
     return (
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={description}>
             <circle
                 cx={size / 2}
                 cy={size / 2}
@@ -42,6 +44,7 @@ function ProgressRing({ value, max, label, size = 160, strokeWidth = 14 }: Progr
                 dominantBaseline="middle"
                 fontSize={size * 0.15}
                 fontWeight={600}
+                fill="var(--text-h)"
             >
                 {label}
             </text>

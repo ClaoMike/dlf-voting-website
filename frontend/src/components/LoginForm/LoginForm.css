@@ -156,3 +156,13 @@
         font-size: 1.6rem;
     }
 }
+
+.login-notice {
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--accent-strong);
+    border-radius: 4px;
+    background-color: var(--accent-soft);
+    color: var(--text-h);
+    font-size: 0.9rem;
+}

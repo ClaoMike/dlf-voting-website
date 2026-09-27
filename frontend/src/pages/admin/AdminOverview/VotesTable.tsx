@@ -1,3 +1,4 @@
+import Pagination from '../../../components/Pagination'
 import type { Tab, VoteRow } from './types'
 
 type VotesTableProps = {
@@ -17,47 +18,40 @@ function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChan
 
     return (
         <>
-            <table className="voting-options-table">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Vote</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {votes.map((vote) => (
-                    <tr key={vote.userId}>
-                        <td>{[vote.firstName, vote.lastName].filter(Boolean).join(' ')}</td>
-                        <td>{vote.username}</td>
-                        <td>{vote.votingOptionName ?? ''}</td>
-                        <td className="voting-options-actions">
-                            <button className="voting-options-edit" onClick={() => onEdit(vote)}>
-                                Edit
-                            </button>
-                            {vote.votingOptionId && (
-                                <button className="voting-options-remove" onClick={() => onDelete(vote)}>
-                                    Remove
-                                </button>
-                            )}
-                        </td>
+            <div className="table-scroll">
+                <table className="voting-options-table">
+                    <caption className="visually-hidden">Votes</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">Vote</th>
+                        <th scope="col"><span className="visually-hidden">Actions</span></th>
                     </tr>
-                ))}
-                </tbody>
-            </table>
-
-            <div className="users-pagination">
-                <button disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-                    Previous
-                </button>
-                <span>
-          Page {page} of {totalPages}
-        </span>
-                <button disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-                    Next
-                </button>
+                    </thead>
+                    <tbody>
+                    {votes.map((vote) => (
+                        <tr key={vote.userId}>
+                            <td>{[vote.firstName, vote.lastName].filter(Boolean).join(' ')}</td>
+                            <td>{vote.username}</td>
+                            <td>{vote.votingOptionName ?? ''}</td>
+                            <td className="voting-options-actions">
+                                <button className="voting-options-edit" onClick={() => onEdit(vote)}>
+                                    Edit<span className="visually-hidden"> vote of {vote.username}</span>
+                                </button>
+                                {vote.votingOptionId && (
+                                    <button className="voting-options-remove" onClick={() => onDelete(vote)}>
+                                        Remove<span className="visually-hidden"> vote of {vote.username}</span>
+                                    </button>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
             </div>
+
+            <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
         </>
     )
 }

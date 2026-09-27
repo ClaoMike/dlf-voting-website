@@ -5,13 +5,16 @@ type ModalProps = {
     titleId: string
     onClose: () => void
     children: ReactNode
+    // Also close when the dimmed area around the dialog is clicked.
+    closeOnBackdropClick?: boolean
+    className?: string
 }
 
 /**
  * A native modal <dialog>: the browser keeps keyboard focus inside it, makes the page behind it inert,
- * closes it on Escape, and returns focus to the button that opened it.
+ * closes it on Escape, and focus goes back to the button that opened it.
  */
-function Modal({ titleId, onClose, children }: ModalProps) {
+function Modal({ titleId, onClose, children, closeOnBackdropClick = false, className }: ModalProps) {
     const ref = useRef<HTMLDialogElement>(null)
 
     useEffect(() => {
@@ -28,14 +31,18 @@ function Modal({ titleId, onClose, children }: ModalProps) {
     return (
         <dialog
             ref={ref}
-            className="confirm-dialog"
+            className={className ? `confirm-dialog ${className}` : 'confirm-dialog'}
             aria-labelledby={titleId}
             onCancel={(e) => {
                 e.preventDefault()
                 onClose()
             }}
+            // The body fills the dialog, so a click that lands on the <dialog> itself is on the backdrop.
+            onClick={(e) => {
+                if (closeOnBackdropClick && e.target === e.currentTarget) onClose()
+            }}
         >
-            {children}
+            <div className="modal-body">{children}</div>
         </dialog>
     )
 }

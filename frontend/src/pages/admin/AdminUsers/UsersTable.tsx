@@ -1,3 +1,4 @@
+import Pagination from '../../../components/Pagination'
 import type { UserListItem } from './types'
 
 type UsersTableProps = {
@@ -11,57 +12,66 @@ type UsersTableProps = {
 }
 
 function UsersTable({ users, page, totalPages, onSelect, onEdit, onDelete, onPageChange }: UsersTableProps) {
+    if (users.length === 0) {
+        return <p>No users yet. Add one, or import them from Excel.</p>
+    }
+
     return (
         <>
-            <table className="voting-options-table">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {users.map((user) => (
-                    <tr key={user.id} className="users-table-row" onClick={() => onSelect(user)}>
-                        <td>{user.name ?? ''}</td>
-                        <td>{user.username}</td>
-                        <td className="voting-options-actions">
-                            <button
-                                className="voting-options-edit"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onEdit(user)
-                                }}
-                            >
-                                Edit
-                            </button>
-                            <button
-                                className="voting-options-remove"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    onDelete(user)
-                                }}
-                            >
-                                Remove
-                            </button>
-                        </td>
+            <div className="table-scroll">
+                <table className="voting-options-table">
+                    <caption className="visually-hidden">Users</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Username</th>
+                        <th scope="col"><span className="visually-hidden">Actions</span></th>
                     </tr>
-                ))}
-                </tbody>
-            </table>
-
-            <div className="users-pagination">
-                <button disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-                    Previous
-                </button>
-                <span>
-          Page {page} of {totalPages}
-        </span>
-                <button disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-                    Next
-                </button>
+                    </thead>
+                    <tbody>
+                    {users.map((user) => (
+                        // The whole row opens the details for mouse users; the username button does it for keyboards.
+                        <tr key={user.id} className="users-table-row" onClick={() => onSelect(user)}>
+                            <td>{user.name ?? ''}</td>
+                            <td>
+                                <button
+                                    className="table-link-button"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onSelect(user)
+                                    }}
+                                >
+                                    {user.username}
+                                    <span className="visually-hidden"> (show details)</span>
+                                </button>
+                            </td>
+                            <td className="voting-options-actions">
+                                <button
+                                    className="voting-options-edit"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onEdit(user)
+                                    }}
+                                >
+                                    Edit<span className="visually-hidden"> {user.username}</span>
+                                </button>
+                                <button
+                                    className="voting-options-remove"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        onDelete(user)
+                                    }}
+                                >
+                                    Remove<span className="visually-hidden"> {user.username}</span>
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
             </div>
+
+            <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
         </>
     )
 }

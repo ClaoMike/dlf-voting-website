@@ -11,13 +11,28 @@ function OverviewCharts({ stats }: OverviewChartsProps) {
 
     return (
         <div className="overview-charts">
-            <ProgressRing
-                value={stats.votedUsers}
-                max={stats.totalUsers}
-                label={`${stats.votedUsers} / ${stats.totalUsers}`}
-            />
-            <ProgressRing value={stats.votedUsers} max={stats.totalUsers} label={`${percentage}%`} />
-            <VoteBarChart data={stats.optionCounts.map((o) => ({ name: o.votingOptionName, count: o.count }))} />
+            <figure className="overview-chart">
+                <ProgressRing
+                    value={stats.votedUsers}
+                    max={stats.totalUsers}
+                    label={`${stats.votedUsers} / ${stats.totalUsers}`}
+                    description={`${stats.votedUsers} of ${stats.totalUsers} users have voted`}
+                />
+                <figcaption>Users who voted</figcaption>
+            </figure>
+            <figure className="overview-chart">
+                <ProgressRing
+                    value={stats.votedUsers}
+                    max={stats.totalUsers}
+                    label={`${percentage}%`}
+                    description={`Turnout ${percentage}%`}
+                />
+                <figcaption>Turnout</figcaption>
+            </figure>
+            <figure className="overview-chart">
+                <VoteBarChart data={stats.optionCounts.map((o) => ({ name: o.votingOptionName, count: o.count }))} />
+                <figcaption>Votes per option</figcaption>
+            </figure>
         </div>
     )
 }

@@ -1,21 +1,43 @@
 .settings-toggle-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .settings-toggle-label {
+    color: var(--text-h);
     font-size: 1rem;
 }
 
+.settings-status {
+    display: inline-block;
+    margin-left: 0.25rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.settings-status-open {
+    background-color: var(--accent-soft);
+    color: var(--accent-strong);
+}
+
+.settings-status-closed {
+    background-color: var(--danger-bg);
+    color: #b82a30;
+}
+
 .settings-toggle-button {
+    min-height: 44px;
     padding: 0.6rem 1.2rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     color: white;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     cursor: pointer;
 }
 
@@ -28,24 +50,20 @@
 }
 
 .settings-toggle-open {
-    background-color: var(--accent);
+    background-color: var(--accent-strong);
 }
 
 .settings-toggle-open:hover {
-    filter: brightness(0.9);
+    filter: brightness(0.92);
+}
+
+.settings-toggle-button:disabled {
+    background-color: #e4e4e4;
+    color: #6b6b6b;
+    cursor: not-allowed;
+    filter: none;
 }
 
 .settings-password-section {
-    margin-top: 2.5rem;
-    max-width: 480px;
-}
-
-.settings-password-section h2 {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-}
-
-.settings-password-success {
-    color: var(--accent);
-    font-size: 0.9rem;
+    max-width: none;
 }

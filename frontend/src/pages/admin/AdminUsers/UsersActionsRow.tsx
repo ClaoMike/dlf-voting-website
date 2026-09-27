@@ -20,7 +20,7 @@ function UsersActionsRow({
                              onRemoveAllClick,
                          }: UsersActionsRowProps) {
     return (
-        <div className="users-actions-row">
+        <div className="admin-card-toolbar">
             <button className="voting-options-add-row-button" onClick={onAddUser}>
                 Add user
             </button>
@@ -34,7 +34,9 @@ function UsersActionsRow({
                 accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 ref={fileInputRef}
                 onChange={onFileSelected}
-                style={{ display: 'none' }}
+                hidden
+                aria-hidden="true"
+                tabIndex={-1}
             />
 
             <button className="voting-options-remove-all" disabled={!canRemoveAll} onClick={onRemoveAllClick}>

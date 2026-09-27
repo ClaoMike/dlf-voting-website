@@ -22,25 +22,29 @@ function AdminAdministrators() {
         <div className="voting-options-page">
             <h1>Administrators</h1>
 
-            <button className="voting-options-add-row-button" onClick={actions.openCreate}>
-                Add administrator
-            </button>
+            <section className="admin-card" aria-label="Administrators">
+                <div className="admin-card-toolbar">
+                    <button className="voting-options-add-row-button" onClick={actions.openCreate}>
+                        Add administrator
+                    </button>
+                </div>
 
-            {displayedError && <p className="voting-options-error">{displayedError}</p>}
+                {displayedError && <p className="voting-options-error" role="alert">{displayedError}</p>}
 
-            {data.isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <AdministratorsTable
-                    admins={data.admins}
-                    currentAdminUsername={currentAdminUsername}
-                    page={data.page}
-                    totalPages={data.totalPages}
-                    onEdit={actions.startEdit}
-                    onDelete={actions.startDelete}
-                    onPageChange={data.fetchAdmins}
-                />
-            )}
+                {data.isLoading ? (
+                    <p role="status">Loading…</p>
+                ) : (
+                    <AdministratorsTable
+                        admins={data.admins}
+                        currentAdminUsername={currentAdminUsername}
+                        page={data.page}
+                        totalPages={data.totalPages}
+                        onEdit={actions.startEdit}
+                        onDelete={actions.startDelete}
+                        onPageChange={data.fetchAdmins}
+                    />
+                )}
+            </section>
 
             {actions.showCreate && (
                 <CreateUserDialog

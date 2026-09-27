@@ -16,18 +16,20 @@ function ChangePasswordSection({
                                    onSubmit,
                                }: ChangePasswordSectionProps) {
     return (
-        <section className="settings-password-section">
-            <h2>Change your password</h2>
+        <section className="admin-card settings-password-section" aria-labelledby="settings-password">
+            <h2 id="settings-password">Change your password</h2>
 
-            <PasswordField value={newPassword} onChange={onPasswordChange} placeholder="New password" />
+            <PasswordField
+                value={newPassword}
+                onChange={onPasswordChange}
+                label="New password"
+                hint="20-64 characters, with at least one uppercase letter, one digit and one special character."
+            />
             {newPassword.length > 0 && !isValid && (
-                <p className="voting-options-error">
-                    Password must be 20-64 characters with at least one uppercase letter, one digit, and
-                    one special character.
-                </p>
+                <p className="voting-options-error" role="alert">This password does not meet the requirements above.</p>
             )}
 
-            {error && <p className="voting-options-error">{error}</p>}
+            {error && <p className="voting-options-error" role="alert">{error}</p>}
 
             <button
                 className="settings-toggle-button settings-toggle-open"

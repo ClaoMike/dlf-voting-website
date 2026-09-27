@@ -17,28 +17,34 @@ function AdminVotingOptions() {
         <div className="voting-options-page">
             <h1>Voting Options</h1>
 
-            <AddOptionRow
-                newName={actions.newName}
-                onNameChange={actions.setNewName}
-                isAdding={actions.isAdding}
-                onAdd={actions.add}
-            />
+            <section className="admin-card" aria-label="Voting options">
+                <div className="admin-card-toolbar">
+                    <AddOptionRow
+                        newName={actions.newName}
+                        onNameChange={actions.setNewName}
+                        isAdding={actions.isAdding}
+                        onAdd={actions.add}
+                    />
 
-            <button
-                className="voting-options-remove-all"
-                disabled={data.options.length === 0}
-                onClick={actions.openRemoveAllConfirm}
-            >
-                Remove all
-            </button>
+                    <button
+                        className="voting-options-remove-all"
+                        disabled={data.options.length === 0}
+                        onClick={actions.openRemoveAllConfirm}
+                    >
+                        Remove all
+                    </button>
+                </div>
 
-            {displayedError && <p className="voting-options-error">{displayedError}</p>}
+                {displayedError && <p className="voting-options-error" role="alert">{displayedError}</p>}
 
-            {data.isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <VotingOptionsTable options={data.options} onEdit={actions.startEdit} onDelete={actions.startDelete} />
-            )}
+                {data.isLoading ? (
+                    <p role="status">Loading…</p>
+                ) : data.options.length === 0 ? (
+                    <p>No voting options yet. Add the first one above.</p>
+                ) : (
+                    <VotingOptionsTable options={data.options} onEdit={actions.startEdit} onDelete={actions.startDelete} />
+                )}
+            </section>
 
             {actions.editingOption && (
                 <EditNameDialog

@@ -5,20 +5,15 @@ type OverviewTabsProps = {
     onTabChange: (tab: Tab) => void
 }
 
+/** Two filter buttons for the table below; aria-pressed tells screen readers which one is on. */
 function OverviewTabs({ activeTab, onTabChange }: OverviewTabsProps) {
     return (
-        <div className="overview-tabs">
-            <button
-                className={activeTab === 'all' ? 'overview-tab active' : 'overview-tab'}
-                onClick={() => onTabChange('all')}
-            >
-                View all users
+        <div className="overview-tabs" role="group" aria-label="Show">
+            <button className="overview-tab" aria-pressed={activeTab === 'all'} onClick={() => onTabChange('all')}>
+                All users
             </button>
-            <button
-                className={activeTab === 'voted' ? 'overview-tab active' : 'overview-tab'}
-                onClick={() => onTabChange('voted')}
-            >
-                View users who voted
+            <button className="overview-tab" aria-pressed={activeTab === 'voted'} onClick={() => onTabChange('voted')}>
+                Users who voted
             </button>
         </div>
     )

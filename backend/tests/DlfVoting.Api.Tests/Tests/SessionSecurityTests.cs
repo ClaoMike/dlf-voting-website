@@ -129,38 +129,182 @@ public class SessionSecurityTests : IntegrationTestBase
         Assert.DoesNotContain("max-age=", setCookie, StringComparison.OrdinalIgnoreCase);
     }
 
-    // --- Five-minute session lifetime ---
+    // --- Ten-minute session lifetime, renewed by activity ---
+
+    private const string AdminLogin = "/api/auth/admin/login";
+    private const string AdminRefresh = "/api/auth/admin/refresh";
+    private const string AdminMe = "/api/auth/admin/me";
+    private const string UserLogin = "/api/auth/user/login";
+    private const string UserRefresh = "/api/auth/user/refresh";
+    private const string UserMe = "/api/auth/user/me";
+
+    private static async Task<string> LoginCookieAsync(WebApplicationFactory<Program> factory, string path, string username, string password)
+    {
+        var response = await factory.CreateClient().PostAsJsonAsync(path, new { username, password });
+        response.EnsureSuccessStatusCode();
+        return IssuedSessionCookie(response) ?? throw new InvalidOperationException("Login set no session cookie.");
+    }
+
+    /// <summary>"name=value" of the live session cookie a response sets (ignoring deletions), or null.</summary>
+    private static string? IssuedSessionCookie(HttpResponseMessage response) =>
+        response.Headers.TryGetValues("Set-Cookie", out var values)
+            ? values
+                .Where(v => v.StartsWith("DlfVoting", StringComparison.Ordinal))
+                .Where(v => !v.Contains("expires=Thu, 01 Jan 1970", StringComparison.OrdinalIgnoreCase))
+                .Select(v => v.Split(';')[0])
+                .FirstOrDefault()
+            : null;
+
+    private static Task<HttpResponseMessage> SendWithCookieAsync(
+        WebApplicationFactory<Program> factory, HttpMethod method, string path, string cookie)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Add("Cookie", cookie);
+        return factory.CreateClient().SendAsync(request);
+    }
 
     [Theory]
-    [InlineData("/api/auth/admin/login", "/api/auth/admin/me", AdminEmail, AdminPassword)]
-    [InlineData("/api/auth/user/login", "/api/auth/user/me", UserUsername, UserPassword)]
-    public async Task Session_IsValidAtFourMinutes_AndExpiredAfterFive(string loginPath, string mePath, string username, string password)
+    [InlineData(AdminLogin, AdminMe, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserMe, UserUsername, UserPassword)]
+    public async Task Session_IsValidAtNineMinutes_AndExpiredAfterTen(string loginPath, string mePath, string username, string password)
     {
         var clock = new AdjustableTimeProvider();
         var factory = FactoryWithClock(clock);
-        var client = await LoginAsync(factory, loginPath, username, password);
+        var cookie = await LoginCookieAsync(factory, loginPath, username, password);
 
-        clock.Offset = TimeSpan.FromMinutes(4);
-        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync(mePath)).StatusCode);
+        clock.Offset = TimeSpan.FromMinutes(9);
+        Assert.Equal(HttpStatusCode.OK, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, cookie)).StatusCode);
 
-        clock.Offset = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync(mePath)).StatusCode);
+        // The request above renewed the session, but only through the new cookie it returned; the old one still ends at 10.
+        clock.Offset = TimeSpan.FromMinutes(10) + TimeSpan.FromSeconds(30);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, cookie)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, AdminMe, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserMe, UserUsername, UserPassword)]
+    public async Task AnyAuthenticatedRequest_RenewsTheSessionForAnotherTenMinutes(string loginPath, string mePath, string username, string password)
+    {
+        var clock = new AdjustableTimeProvider();
+        var factory = FactoryWithClock(clock);
+        var original = await LoginCookieAsync(factory, loginPath, username, password);
+
+        clock.Offset = TimeSpan.FromMinutes(8);
+        var renewed = IssuedSessionCookie(await SendWithCookieAsync(factory, HttpMethod.Get, mePath, original));
+        Assert.NotNull(renewed);
+
+        clock.Offset = TimeSpan.FromMinutes(16);
+        Assert.Equal(HttpStatusCode.OK, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, renewed)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, original)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, AdminRefresh, AdminMe, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserRefresh, UserMe, UserUsername, UserPassword)]
+    public async Task RenewedSession_EndsTenMinutesAfterTheLastActivity(string loginPath, string refreshPath, string mePath, string username, string password)
+    {
+        var clock = new AdjustableTimeProvider();
+        var factory = FactoryWithClock(clock);
+        var cookie = await LoginCookieAsync(factory, loginPath, username, password);
+
+        clock.Offset = TimeSpan.FromMinutes(5);
+        var renewed = IssuedSessionCookie(await SendWithCookieAsync(factory, HttpMethod.Post, refreshPath, cookie));
+        Assert.NotNull(renewed);
+
+        clock.Offset = TimeSpan.FromMinutes(15) + TimeSpan.FromSeconds(30);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, renewed)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, AdminRefresh, AdminMe, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserRefresh, UserMe, UserUsername, UserPassword)]
+    public async Task ActiveSession_StaysValidLongAfterTenMinutes(string loginPath, string refreshPath, string mePath, string username, string password)
+    {
+        var clock = new AdjustableTimeProvider();
+        var factory = FactoryWithClock(clock);
+        var cookie = await LoginCookieAsync(factory, loginPath, username, password);
+
+        // Someone active every 6 minutes for an hour, always using the latest cookie (as the browser does).
+        for (var minute = 6; minute <= 60; minute += 6)
+        {
+            clock.Offset = TimeSpan.FromMinutes(minute);
+            var response = await SendWithCookieAsync(factory, HttpMethod.Post, refreshPath, cookie);
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+            cookie = IssuedSessionCookie(response) ?? throw new InvalidOperationException($"No renewed cookie at minute {minute}.");
+        }
+
+        clock.Offset = TimeSpan.FromMinutes(69);
+        Assert.Equal(HttpStatusCode.OK, (await SendWithCookieAsync(factory, HttpMethod.Get, mePath, cookie)).StatusCode);
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, AdminRefresh, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserRefresh, UserUsername, UserPassword)]
+    public async Task Refresh_ReturnsNoContent_AndReissuesACookieWithTheSameProtections(string loginPath, string refreshPath, string username, string password)
+    {
+        var cookie = await LoginCookieAsync(Factory, loginPath, username, password);
+
+        var response = await SendWithCookieAsync(Factory, HttpMethod.Post, refreshPath, cookie);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var setCookie = response.Headers.GetValues("Set-Cookie").Single(v => v.StartsWith(cookie.Split('=')[0] + "="));
+        Assert.Contains("httponly", setCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=lax", setCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("secure", setCookie, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("expires=", setCookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(AdminRefresh)]
+    [InlineData(UserRefresh)]
+    public async Task Refresh_WithoutSession_ReturnsUnauthorized_AndIssuesNoCookie(string refreshPath)
+    {
+        var response = await Factory.CreateClient().PostAsync(refreshPath, null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Null(IssuedSessionCookie(response));
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, AdminRefresh, AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, UserRefresh, UserUsername, UserPassword)]
+    public async Task Refresh_AfterTheSessionExpired_ReturnsUnauthorized_AndDoesNotRevive(string loginPath, string refreshPath, string username, string password)
+    {
+        var clock = new AdjustableTimeProvider();
+        var factory = FactoryWithClock(clock);
+        var cookie = await LoginCookieAsync(factory, loginPath, username, password);
+
+        clock.Offset = TimeSpan.FromMinutes(11);
+        var response = await SendWithCookieAsync(factory, HttpMethod.Post, refreshPath, cookie);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Null(IssuedSessionCookie(response));
     }
 
     [Fact]
-    public async Task Session_IsNotExtendedByActivity()
+    public async Task Refresh_ForADeletedUser_ReturnsUnauthorized_AndIssuesNoCookie()
     {
-        var clock = new AdjustableTimeProvider();
-        var factory = FactoryWithClock(clock);
-        var client = await LoginAsync(factory, "/api/auth/admin/login", AdminEmail, AdminPassword);
+        var cookie = await LoginCookieAsync(Factory, UserLogin, UserUsername, UserPassword);
+        var admin = await CreateAuthenticatedClientAsync();
+        (await admin.DeleteAsync($"/api/users/{await GetSeededUserIdAsync()}")).EnsureSuccessStatusCode();
 
-        clock.Offset = TimeSpan.FromMinutes(4);
-        var midSession = await client.GetAsync("/api/users");
-        Assert.Equal(HttpStatusCode.OK, midSession.StatusCode);
-        Assert.False(midSession.Headers.Contains("Set-Cookie"), "An authenticated request must not re-issue (slide) the cookie.");
+        var response = await SendWithCookieAsync(Factory, HttpMethod.Post, UserRefresh, cookie);
 
-        clock.Offset = TimeSpan.FromMinutes(6);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/users")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Null(IssuedSessionCookie(response));
+    }
+
+    [Theory]
+    [InlineData(AdminLogin, "/api/auth/admin/logout", AdminEmail, AdminPassword)]
+    [InlineData(UserLogin, "/api/auth/user/logout", UserUsername, UserPassword)]
+    public async Task Logout_OnlyDeletesTheCookie_AndNeverRenewsIt(string loginPath, string logoutPath, string username, string password)
+    {
+        var cookie = await LoginCookieAsync(Factory, loginPath, username, password);
+
+        var response = await SendWithCookieAsync(Factory, HttpMethod.Post, logoutPath, cookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(IssuedSessionCookie(response));
     }
 
     [Fact]
@@ -170,7 +314,7 @@ public class SessionSecurityTests : IntegrationTestBase
         var factory = FactoryWithClock(clock);
         var client = await LoginAsync(factory, "/api/auth/admin/login", AdminEmail, AdminPassword);
 
-        clock.Offset = TimeSpan.FromMinutes(10);
+        clock.Offset = TimeSpan.FromMinutes(11);
         var response = await client.DeleteAsync("/api/users");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);

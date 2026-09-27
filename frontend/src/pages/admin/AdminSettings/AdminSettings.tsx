@@ -5,6 +5,7 @@ import { useChangePassword } from './useChangePassword'
 import VotingToggleSection from './VotingToggleSection'
 import ChangePasswordSection from './ChangePasswordSection'
 
+import '../AdminVotingOptions/AdminVotingOptions.css'
 import './AdminSettings.css'
 
 function AdminSettings() {
@@ -16,16 +17,19 @@ function AdminSettings() {
         <div className="voting-options-page">
             <h1>Settings</h1>
 
-            {votingStatus.error && <p className="voting-options-error">{votingStatus.error}</p>}
+            <section className="admin-card" aria-labelledby="settings-voting">
+                <h2 id="settings-voting">Voting</h2>
+                {votingStatus.error && <p className="voting-options-error" role="alert">{votingStatus.error}</p>}
 
-            {votingStatus.isLoading ? (
-                <p>Loading...</p>
-            ) : (
-                <VotingToggleSection
-                    isVotingOpen={votingStatus.isVotingOpen ?? true}
-                    onToggle={votingStatus.toggle}
-                />
-            )}
+                {votingStatus.isLoading ? (
+                    <p role="status">Loading…</p>
+                ) : (
+                    <VotingToggleSection
+                        isVotingOpen={votingStatus.isVotingOpen ?? true}
+                        onToggle={votingStatus.toggle}
+                    />
+                )}
+            </section>
 
             <ChangePasswordSection
                 newPassword={changePassword.newPassword}

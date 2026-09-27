@@ -1,20 +1,12 @@
-.confirm-dialog-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
 .confirm-dialog {
     background-color: #ffffff;
     border: none;
-    border-radius: 8px;
-    padding: 1.75rem;
+    border-top: 4px solid var(--accent);
+    border-radius: 12px;
+    /* The padding lives on .modal-body, so a click on the <dialog> itself is always the backdrop. */
+    padding: 0;
     width: 100%;
-    max-width: 360px;
+    max-width: 400px;
     box-sizing: border-box;
     color: var(--text-h);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -26,11 +18,48 @@
     background-color: rgba(0, 0, 0, 0.4);
 }
 
+.modal-body {
+    padding: 1.75rem;
+}
+
 @media (max-width: 480px) {
     .confirm-dialog {
         max-width: calc(100vw - 2rem);
+    }
+
+    .modal-body {
         padding: 1.25rem;
     }
+}
+
+/* Labelled fields inside dialogs. */
+.dialog-field {
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.dialog-label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--text-h);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.dialog-hint {
+    margin: -0.1rem 0 0.4rem;
+    font-size: 0.8rem;
+}
+
+.dialog-field .confirm-dialog-input {
+    margin-bottom: 0;
+}
+
+.dialog-error {
+    margin: 0.35rem 0 0;
+    color: #c0392b;
+    font-size: 0.85rem;
+    text-align: left;
 }
 
 .confirm-dialog-title {
@@ -52,6 +81,7 @@
 
 .confirm-dialog-actions button {
     flex: 1;
+    min-height: 44px;
     padding: 0.6rem;
     border: none;
     border-radius: 4px;
@@ -79,6 +109,7 @@
 }
 
 .confirm-dialog-input {
+    min-height: 44px;
     width: 100%;
     padding: 0.6rem 0.75rem;
     margin-bottom: 1.5rem;

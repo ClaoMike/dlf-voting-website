@@ -202,3 +202,8 @@
         white-space: nowrap;
     }
 }
+
+/* Headings only receive focus from the page-change announcement above; no ring needed. */
+.app-content h1[tabindex='-1']:focus {
+    outline: none;
+}

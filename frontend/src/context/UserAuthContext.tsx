@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useSessionKeepAlive } from '../hooks/useSessionKeepAlive'
 
 type LoginResult = { success: boolean; error?: string }
 
@@ -9,6 +10,8 @@ function toFullName(body: { firstName?: string | null; lastName?: string | null 
 type UserAuthContextType = {
     isAuthenticated: boolean
     isLoading: boolean
+    // True when the session ended because of inactivity (the login page says so).
+    sessionExpired: boolean
     username: string | null
     // "First Last" from the employee import; null when the user has no name on record.
     fullName: string | null
@@ -21,6 +24,7 @@ const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined
 export function UserAuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [sessionExpired, setSessionExpired] = useState(false)
     const [username, setUsername] = useState<string | null>(null)
     const [fullName, setFullName] = useState<string | null>(null)
 
@@ -48,6 +52,13 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         void checkSession()
     }, [])
 
+    const handleExpired = useCallback(() => {
+        setIsAuthenticated(false)
+        setSessionExpired(true)
+    }, [])
+
+    useSessionKeepAlive(isAuthenticated, 'http://localhost:5120/api/auth/user/refresh', handleExpired)
+
     const login = async (loginUsername: string, password: string): Promise<LoginResult> => {
         const res = await fetch('http://localhost:5120/api/auth/user/login', {
             method: 'POST',
@@ -60,6 +71,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
             return { success: false, error: 'Invalid username or password.' }
         }
 
+        setSessionExpired(false)
         // Use the stored username rather than what was typed, since login is case-insensitive.
         const body = await res.json()
         setUsername(body.username)
@@ -79,7 +91,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <UserAuthContext.Provider value={{ isAuthenticated, isLoading, username, fullName, login, logout }}>
+        <UserAuthContext.Provider value={{ isAuthenticated, isLoading, sessionExpired, username, fullName, login, logout }}>
             {children}
         </UserAuthContext.Provider>
     )
