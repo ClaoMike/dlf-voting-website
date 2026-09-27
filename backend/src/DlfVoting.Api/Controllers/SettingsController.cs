@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using DlfVoting.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +22,8 @@ public class SettingsController : ControllerBase
     }
 
     private record VotingStatusResponse(bool IsVotingOpen);
-    public record UpdateVotingStatusRequest(bool IsVotingOpen);
+    // Nullable + [Required] so a body without the field is a 400 instead of silently meaning "closed".
+    public record UpdateVotingStatusRequest([Required] bool? IsVotingOpen);
 
     [HttpGet]
     [Authorize(AuthenticationSchemes = $"{AuthSchemes.Admin},{AuthSchemes.User}")]
@@ -44,8 +46,8 @@ public class SettingsController : ControllerBase
             "INSERT INTO \"VotingSettings\" (\"Id\", \"IsVotingOpen\", \"UpdatedAt\") " +
             "VALUES ({0}, {1}, {2}) " +
             "ON CONFLICT (\"Id\") DO UPDATE SET \"IsVotingOpen\" = EXCLUDED.\"IsVotingOpen\", \"UpdatedAt\" = EXCLUDED.\"UpdatedAt\"",
-            SettingsRowId, request.IsVotingOpen, now);
+            SettingsRowId, request.IsVotingOpen!.Value, now);
 
-        return Ok(new VotingStatusResponse(request.IsVotingOpen));
+        return Ok(new VotingStatusResponse(request.IsVotingOpen.Value));
     }
 }

@@ -20,6 +20,10 @@ builder.Services.AddScoped<VoteReportService>();
 builder.Services.AddScoped<EmailImportService>();
 builder.Services.AddScoped<EmployeeImportService>();
 
+// Outside local development the site is only served over HTTPS (Azure terminates TLS in front of the app), so the
+// session cookies are always marked Secure rather than trusting the scheme of the request that reaches the app.
+var cookieSecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+
 builder.Services.AddAuthentication(AuthSchemes.Admin)
     .AddCookie(AuthSchemes.Admin, options =>
     {
@@ -28,12 +32,13 @@ builder.Services.AddAuthentication(AuthSchemes.Admin)
         options.SlidingExpiration = false;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return Task.CompletedTask;
         };
+        options.Events.OnValidatePrincipal = SessionValidation.ValidateAdminAsync;
     })
     .AddCookie(AuthSchemes.User, options =>
     {
@@ -42,12 +47,13 @@ builder.Services.AddAuthentication(AuthSchemes.Admin)
         options.SlidingExpiration = false;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
         options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return Task.CompletedTask;
         };
+        options.Events.OnValidatePrincipal = SessionValidation.ValidateUserAsync;
     });
 
 builder.Services.AddAuthorization();

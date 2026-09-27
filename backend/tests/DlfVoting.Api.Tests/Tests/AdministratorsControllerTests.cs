@@ -486,9 +486,9 @@ public class AdministratorsControllerTests : IntegrationTestBase
         var taskFromBOnSelf = adminBClient.DeleteAsync($"/api/administrators/{adminBId}");
         await Task.WhenAll(taskFromA, taskFromBOnSelf);
 
-        // B's self-delete attempt must always be 403, regardless of what A's request does.
+        // B's self-delete attempt must always be blocked: 403, or 401 if A's delete landed first and ended B's session.
         var bResponse = await taskFromBOnSelf;
-        Assert.Equal(HttpStatusCode.Forbidden, bResponse.StatusCode);
+        Assert.Contains(bResponse.StatusCode, new[] { HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized });
 
         // A's request (not a self-delete) must succeed cleanly.
         var aResponse = await taskFromA;

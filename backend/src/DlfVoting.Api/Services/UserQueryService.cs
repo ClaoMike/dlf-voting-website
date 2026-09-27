@@ -1,3 +1,4 @@
+using DlfVoting.Api.Common;
 using DlfVoting.Api.Contracts;
 using DlfVoting.Domain;
 using DlfVoting.Infrastructure;
@@ -19,7 +20,7 @@ public class UserQueryService
 
     public async Task<PagedUsersResponse> GetPageAsync(int page)
     {
-        if (page < 1) page = 1;
+        page = Paging.ClampPage(page, PageSize);
 
         var totalCount = await _db.Users.CountAsync();
 

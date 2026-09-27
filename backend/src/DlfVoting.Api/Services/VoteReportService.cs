@@ -1,3 +1,5 @@
+using System.Data;
+using DlfVoting.Api.Common;
 using DlfVoting.Api.Contracts;
 using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +22,7 @@ public class VoteReportService
     /// <summary>A page of users sorted by name, each with their vote (if any).</summary>
     public async Task<PagedVotesResponse> GetPageAsync(int page, bool onlyVoted)
     {
-        if (page < 1) page = 1;
+        page = Paging.ClampPage(page, PageSize);
 
         var users = onlyVoted
             ? _db.Users.Where(u => _db.Votes.Any(v => v.UserId == u.Id))
@@ -54,6 +56,9 @@ public class VoteReportService
 
     public async Task<VoteStatsResponse> GetStatsAsync()
     {
+        // One snapshot for all three queries, so totals and per-option counts agree while votes are coming in.
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead);
+
         var totalUsers = await _db.Users.CountAsync();
         var votedUsers = await _db.Votes.CountAsync();
 

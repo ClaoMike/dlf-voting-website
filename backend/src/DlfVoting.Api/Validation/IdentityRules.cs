@@ -9,6 +9,9 @@ public static partial class IdentityRules
 {
     public const int UsernameMinLength = 5;
 
+    // Matches the varchar(320) email columns (the RFC 5321 maximum).
+    public const int EmailMaxLength = 320;
+
     public const string InvalidEmailMessage = "Please provide a valid email address.";
     public const string InvalidPasswordMessage =
         "Password must be 20-64 characters and include at least one uppercase letter, one digit, and one special character.";
@@ -23,7 +26,7 @@ public static partial class IdentityRules
     [GeneratedRegex(@"^[^\s\p{C}]*$")]
     private static partial Regex UsernameCharactersRegex();
 
-    public static bool IsValidEmail(string email) => EmailRegex().IsMatch(email);
+    public static bool IsValidEmail(string email) => email.Length <= EmailMaxLength && EmailRegex().IsMatch(email);
 
     public static bool IsValidPassword(string? password) => !string.IsNullOrEmpty(password) && PasswordRegex().IsMatch(password);
 

@@ -38,7 +38,7 @@ public class AdminVotesController : ControllerBase
             return NotFound(new { message = "This user no longer exists." });
         }
 
-        return this.ToActionResult(await _votes.CastOrChangeAsync(userId, request.VotingOptionId));
+        return this.ToActionResult(await _votes.CastOrChangeAsync(userId, request.VotingOptionId, onlyWhileVotingOpen: false));
     }
 
     [HttpDelete("{userId:guid}")]

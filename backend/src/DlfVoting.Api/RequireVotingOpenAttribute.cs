@@ -8,6 +8,8 @@ namespace DlfVoting.Api;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class RequireVotingOpenAttribute : Attribute, IAsyncActionFilter
 {
+    public const string VotingClosedMessage = "Voting polls are closed.";
+
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var isAdmin = context.HttpContext.User.Identities
@@ -25,7 +27,7 @@ public class RequireVotingOpenAttribute : Attribute, IAsyncActionFilter
 
         if (!isOpen)
         {
-            context.Result = new ObjectResult(new { message = "Voting polls are closed." })
+            context.Result = new ObjectResult(new { message = VotingClosedMessage })
             {
                 StatusCode = StatusCodes.Status403Forbidden
             };

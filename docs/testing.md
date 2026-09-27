@@ -47,9 +47,11 @@ Migrations are applied automatically to the test database on the first test run 
 
 - `TestWebApplicationFactory` boots the real `Program` (requires `public partial class Program { }` at the bottom of `Program.cs` since minimal hosting APIs make `Program` `internal` by default) with the environment set to `"Testing"`, and swaps the DbContext's connection string to point at `dlf_voting_test`.
 - `DatabaseFixture` applies EF Core migrations once and resets data between tests via `Respawn`.
+- The 5-minute session expiry is tested in `SessionSecurityTests` by swapping in a `TimeProvider` whose clock can be moved forward.
+- Sessions are re-checked against the database on every request (`SessionValidation`), so deleting an admin or user ends their session immediately.
+- The test connection string caps `Maximum Pool Size` below Postgres' `max_connections`; `ConcurrencyTests` fires hundreds of requests at once and would otherwise be refused connections.
 - Cookie auth is **stateless** — logout only tells the browser to expire the cookie (via `Set-Cookie` with a past expiry date); it does not invalidate the cookie server-side. Tests that manually reuse a captured cookie string after logout will still succeed against `/me`, because there's no server-side session store to check. This is expected — test logout by asserting the response's `Set-Cookie` header carries an expiry in the past, not by trying to reuse the cookie afterward.
 
 ## Known gaps / TODO
 
-- No test yet for the 5-minute session expiry itself (would need either a configurable expiry injected via test settings, or manipulating the clock) — currently verified manually.
 - Frontend is intentionally not under automated test coverage yet (internal tool, tight deadline, UI still evolving). Revisit once the actual voting flow (ballot, submission, results) is built — that's the part where a UI bug would have real impact.

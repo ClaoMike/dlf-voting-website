@@ -30,7 +30,7 @@ public class AdministratorService
     /// <summary>The signed-in admin first, then everyone else by username.</summary>
     public async Task<PagedAdministratorsResponse> GetPageAsync(Guid currentAdminId, int page)
     {
-        if (page < 1) page = 1;
+        page = Paging.ClampPage(page, PageSize);
 
         var totalCount = await _db.Administrators.CountAsync();
         var items = await _db.Administrators
@@ -107,12 +107,22 @@ public class AdministratorService
     {
         if (id == currentAdminId) return OperationResult.Forbidden("You cannot remove your own administrator account.");
 
-        var admin = await _db.Administrators.FindAsync(id);
+        // Lock both accounts (in Id order, so two admins deleting each other can't deadlock). If they do it at the
+        // same moment, the second one waits, then finds their own account gone: there is always an administrator left.
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        var locked = await _db.Administrators
+            .FromSql($"""SELECT * FROM "Administrators" WHERE "Id" IN ({currentAdminId}, {id}) ORDER BY "Id" FOR UPDATE""")
+            .ToListAsync();
+
+        if (locked.All(a => a.Id != currentAdminId)) return OperationResult.NotFound(OwnAccountGoneMessage);
+
+        var admin = locked.FirstOrDefault(a => a.Id == id);
         if (admin is null) return OperationResult.NotFound(AdminAlreadyRemovedMessage);
 
         _db.Administrators.Remove(admin);
-        var saved = await SaveAsync(admin, AdminAlreadyRemovedMessage);
-        return saved.Status == OperationStatus.Ok ? OperationResult.Success : new OperationResult(saved.Status, saved.Message);
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return OperationResult.Success;
     }
 
     public async Task<OperationResult<Administrator>> ChangeOwnPasswordAsync(Guid currentAdminId, string? password)

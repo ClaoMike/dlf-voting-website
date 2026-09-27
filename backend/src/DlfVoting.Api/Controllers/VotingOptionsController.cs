@@ -21,6 +21,8 @@ public class VotingOptionsController : ControllerBase
         _db = db;
     }
 
+    private static readonly string NameTooLongMessage = $"Name cannot be longer than {VotingOption.NameMaxLength} characters.";
+
     public record CreateVotingOptionRequest(string Name);
     public record UpdateVotingOptionRequest(string Name);
     private record VotingOptionResponse(Guid Id, string Name, DateTime CreatedAt);
@@ -46,6 +48,11 @@ public class VotingOptionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
         {
             return BadRequest(new { message = "Name cannot be empty." });
+        }
+
+        if (name.Length > VotingOption.NameMaxLength)
+        {
+            return BadRequest(new { message = NameTooLongMessage });
         }
 
         var alreadyExists = await _db.VotingOptions
@@ -90,6 +97,11 @@ public class VotingOptionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
         {
             return BadRequest(new { message = "Name cannot be empty." });
+        }
+
+        if (name.Length > VotingOption.NameMaxLength)
+        {
+            return BadRequest(new { message = NameTooLongMessage });
         }
 
         var option = await _db.VotingOptions.FindAsync(id);

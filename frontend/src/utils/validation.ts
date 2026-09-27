@@ -9,9 +9,11 @@ const USERNAME_CHARS_REGEX = /^[^\s\p{C}]*$/u
 export const USERNAME_MIN_LENGTH = 5
 export const USER_USERNAME_MAX_LENGTH = 20
 export const ADMIN_USERNAME_MAX_LENGTH = 320
+export const EMAIL_MAX_LENGTH = 320
 
 export function isValidEmail(email: string): boolean {
-    return EMAIL_REGEX.test(email.trim())
+    const trimmed = email.trim()
+    return trimmed.length <= EMAIL_MAX_LENGTH && EMAIL_REGEX.test(trimmed)
 }
 
 export function isValidPassword(password: string): boolean {

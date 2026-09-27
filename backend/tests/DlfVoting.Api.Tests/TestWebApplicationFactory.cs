@@ -10,8 +10,10 @@ namespace DlfVoting.Api.Tests;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // The pool stays below Postgres' max_connections (100 by default), so a burst of requests queues for a
+    // connection instead of being refused by the server.
     public const string TestConnectionString =
-        "Host=localhost;Database=dlf_voting_test;Username=" + "claomike";
+        "Host=localhost;Database=dlf_voting_test;Username=" + "claomike" + ";Maximum Pool Size=40";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

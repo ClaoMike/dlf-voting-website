@@ -33,7 +33,8 @@ public class DlfVotingDbContext : DbContext
             entity.Property(a => a.Username).IsRequired().HasMaxLength(Administrator.UsernameMaxLength)
                 .UseCollation(CaseInsensitiveCollation);
             entity.HasIndex(a => a.Username).IsUnique();
-            entity.Property(a => a.Email).IsRequired().HasMaxLength(320);
+            entity.Property(a => a.Email).IsRequired().HasMaxLength(320)
+                .UseCollation(CaseInsensitiveCollation);
             entity.HasIndex(a => a.Email).IsUnique();
             entity.Property(a => a.PasswordHash).IsRequired();
         });
@@ -41,7 +42,7 @@ public class DlfVotingDbContext : DbContext
         modelBuilder.Entity<VotingOption>(entity =>
         {
             entity.HasKey(v => v.Id);
-            entity.Property(v => v.Name).IsRequired().HasMaxLength(200);
+            entity.Property(v => v.Name).IsRequired().HasMaxLength(VotingOption.NameMaxLength);
             entity.HasIndex(v => v.Name).IsUnique();
         });
         
@@ -51,7 +52,9 @@ public class DlfVotingDbContext : DbContext
             entity.Property(u => u.Username).IsRequired().HasMaxLength(User.UsernameMaxLength)
                 .UseCollation(CaseInsensitiveCollation);
             entity.HasIndex(u => u.Username).IsUnique();
-            entity.Property(u => u.Email).HasMaxLength(320);
+            // Case-insensitive like usernames: "A@x.dk" and "a@x.dk" are one person, and must not get two accounts (two votes).
+            entity.Property(u => u.Email).HasMaxLength(320)
+                .UseCollation(CaseInsensitiveCollation);
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.EmployeeCode).HasMaxLength(User.EmployeeFieldMaxLength);
