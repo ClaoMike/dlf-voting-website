@@ -29,7 +29,7 @@ function EditNameDialog({ title, initialValue, onSave, onCancel }: EditNameDialo
                     type="text"
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
-                    autoFocus
+                    data-autofocus
                 />
             </div>
             <div className="confirm-dialog-actions">

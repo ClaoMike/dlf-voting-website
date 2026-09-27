@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { PagedVotes, Tab, VoteRow, VotingOption, VoteStats } from './types'
 
-const STATS_API = 'http://localhost:5120/api/votes/stats'
-const VOTES_API = 'http://localhost:5120/api/votes'
-const OPTIONS_API = 'http://localhost:5120/api/voting-options'
+const STATS_API = '/api/votes/stats'
+const VOTES_API = '/api/votes'
+const OPTIONS_API = '/api/voting-options'
 
 export function useVotesData() {
     const [tab, setTab] = useState<Tab>('all')

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { VotingOption } from './types'
 
-const API_BASE = 'http://localhost:5120/api/voting-options'
+const API_BASE = '/api/voting-options'
 
 export function useVotingOptionsData() {
     const [options, setOptions] = useState<VotingOption[]>([])

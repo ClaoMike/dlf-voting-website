@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { User, UserListItem } from './types'
 
-const API_BASE = 'http://localhost:5120/api/users'
+const API_BASE = '/api/users'
 
 export function useUserActions(onChanged: (page: number) => Promise<void>, currentPage: number) {
     const [showCreate, setShowCreate] = useState(false)

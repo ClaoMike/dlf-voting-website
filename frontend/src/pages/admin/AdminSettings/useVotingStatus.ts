@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const STATUS_API = 'http://localhost:5120/api/settings/voting'
+const STATUS_API = '/api/settings/voting'
 
 export function useVotingStatus() {
     const [isVotingOpen, setIsVotingOpen] = useState<boolean | null>(null)

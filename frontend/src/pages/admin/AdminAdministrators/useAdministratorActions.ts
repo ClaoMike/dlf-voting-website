@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Administrator } from './types'
 
-const API_BASE = 'http://localhost:5120/api/administrators'
+const API_BASE = '/api/administrators'
 
 export function useAdministratorActions(onChanged: (page: number) => Promise<void>, currentPage: number) {
     const [showCreate, setShowCreate] = useState(false)

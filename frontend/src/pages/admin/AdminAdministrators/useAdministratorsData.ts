@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PagedAdministrators, Administrator } from './types'
 
-const API_BASE = 'http://localhost:5120/api/administrators'
+const API_BASE = '/api/administrators'
 
 export function useAdministratorsData() {
     const [admins, setAdmins] = useState<Administrator[]>([])

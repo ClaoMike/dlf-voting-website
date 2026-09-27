@@ -13,6 +13,8 @@ type ModalProps = {
 /**
  * A native modal <dialog>: the browser keeps keyboard focus inside it, makes the page behind it inert,
  * closes it on Escape, and focus goes back to the button that opened it.
+ * Focus starts on the element marked data-autofocus, or else the first focusable one. (React's autoFocus runs
+ * before the dialog opens, and opening it moves focus again, so it can't be used here.)
  */
 function Modal({ titleId, onClose, children, closeOnBackdropClick = false, className }: ModalProps) {
     const ref = useRef<HTMLDialogElement>(null)
@@ -21,6 +23,7 @@ function Modal({ titleId, onClose, children, closeOnBackdropClick = false, class
         const dialog = ref.current
         const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
         dialog?.showModal()
+        dialog?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
         return () => {
             dialog?.close()
             // React has already removed the dialog by now, so the browser can't restore focus itself.

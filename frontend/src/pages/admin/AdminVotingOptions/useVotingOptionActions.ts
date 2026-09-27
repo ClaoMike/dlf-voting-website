@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { VotingOption } from './types'
 
-const API_BASE = 'http://localhost:5120/api/voting-options'
+const API_BASE = '/api/voting-options'
 
 export function useVotingOptionActions(onChanged: () => Promise<void>) {
     const [newName, setNewName] = useState('')

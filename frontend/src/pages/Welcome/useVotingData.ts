@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { MyVote, VotingOption } from './types'
 
-const OPTIONS_API = 'http://localhost:5120/api/voting-options'
-const VOTES_API = 'http://localhost:5120/api/votes'
-const STATUS_API = 'http://localhost:5120/api/settings/voting'
+const OPTIONS_API = '/api/voting-options'
+const VOTES_API = '/api/votes'
+const STATUS_API = '/api/settings/voting'
 
 export type SubmitProblem = { message: string; sessionExpired?: boolean }
 

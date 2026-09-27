@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import { useUserAuth } from '../../context/UserAuthContext'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import SessionTimeoutDialog from '../SessionTimeoutDialog/SessionTimeoutDialog'
 import SidebarHeader from './SidebarHeader'
 import AdminNav from './AdminNav'
 import SidebarAuthActions from './SidebarAuthActions'
@@ -62,6 +63,12 @@ function Layout() {
         }
     }
 
+    // Whichever session is about to time out (the admin one first, if both are).
+    const expiringSession =
+        admin.sessionWarningSecondsLeft !== null ? { ...admin, loginPath: '/login/admin' }
+            : user.sessionWarningSecondsLeft !== null ? { ...user, loginPath: '/login' }
+                : null
+
     const handleSignOutAndLoginAsUser = async () => {
         await admin.logout()
         window.location.href = '/login'
@@ -90,6 +97,17 @@ function Layout() {
             <main id="main" className="app-content" tabIndex={-1}>
                 <Outlet />
             </main>
+
+            {expiringSession && (
+                <SessionTimeoutDialog
+                    secondsLeft={expiringSession.sessionWarningSecondsLeft!}
+                    onStaySignedIn={() => void expiringSession.staySignedIn()}
+                    onSignOut={async () => {
+                        await expiringSession.logout()
+                        navigate(expiringSession.loginPath)
+                    }}
+                />
+            )}
 
             {confirmingSignOutAs && (
                 <ConfirmDialog

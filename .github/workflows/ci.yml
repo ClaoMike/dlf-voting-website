@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+  # Deploys only when started by hand (Actions → CI → Run workflow), once Azure is set up (docs/deployment.md).
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the build to Azure App Service
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # The official image is built with ICU, which the case-insensitive and Danish collations need.
+        image: postgres:16
+        env:
+          POSTGRES_USER: dlfvoting
+          POSTGRES_PASSWORD: dlfvoting
+          POSTGRES_DB: dlf_voting_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U dlfvoting"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DLFVOTING_TEST_DB: Host=localhost;Database=dlf_voting_test;Username=dlfvoting;Password=dlfvoting;Maximum Pool Size=40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - run: dotnet test backend/tests/DlfVoting.Api.Tests --logger "console;verbosity=normal"
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Type check and production build. (Lint isn't enforced yet: it has pre-existing errors to clear first.)
+      - run: npm run build
+
+  publish:
+    needs: [backend-tests, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # Also builds the frontend into wwwroot (see the PublishFrontend target in DlfVoting.Api.csproj).
+      - run: dotnet publish backend/src/DlfVoting.Api -c Release -o publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dlf-voting-app
+          path: publish
+          retention-days: 14
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write # Sign in to Azure with OpenID Connect: no stored password.
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dlf-voting-app
+          path: publish
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          package: publish

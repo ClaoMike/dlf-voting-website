@@ -1,0 +1,7 @@
+.session-warning-countdown {
+    margin: -0.5rem 0 1.5rem;
+    color: var(--text-h);
+    font-size: 2.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}

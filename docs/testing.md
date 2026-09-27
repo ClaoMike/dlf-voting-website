@@ -41,6 +41,9 @@ Integration tests for the ASP.NET Core API, run against a real PostgreSQL databa
 dotnet test backend/tests/DlfVoting.Api.Tests
 ```
 
+To use another database, set `DLFVOTING_TEST_DB` to its connection string (CI does this with a PostgreSQL service
+container; see `.github/workflows/ci.yml`).
+
 Migrations are applied automatically to the test database on the first test run (via `DatabaseFixture`). Respawn resets table data between each test class run, so tests don't interfere with each other.
 
 ## Architecture notes

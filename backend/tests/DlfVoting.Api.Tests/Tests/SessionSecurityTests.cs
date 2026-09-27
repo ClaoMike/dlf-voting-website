@@ -388,17 +388,19 @@ public class SessionSecurityTests : IntegrationTestBase
 
     // --- CORS ---
 
-    [Fact]
-    public async Task Cors_FrontendOrigin_IsAllowedWithCredentials()
+    [Theory]
+    [InlineData(FrontendOrigin)]
+    [InlineData(EvilOrigin)]
+    public async Task Cors_NoOtherOriginIsGrantedAccess_TheWebsiteIsServedFromTheSameAddress(string origin)
     {
         var client = await CreateAuthenticatedClientAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, "/api/users");
-        request.Headers.Add("Origin", FrontendOrigin);
+        request.Headers.Add("Origin", origin);
 
         var response = await client.SendAsync(request);
 
-        Assert.Equal(FrontendOrigin, response.Headers.GetValues("Access-Control-Allow-Origin").Single());
-        Assert.Equal("true", response.Headers.GetValues("Access-Control-Allow-Credentials").Single());
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Credentials"));
     }
 
     [Fact]

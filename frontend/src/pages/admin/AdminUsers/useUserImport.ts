@@ -1,7 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { ImportMode, ImportSummary } from './types'
 
-const API_BASE = 'http://localhost:5120/api/users'
+const API_BASE = '/api/users'
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 

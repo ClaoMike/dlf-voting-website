@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PagedUsers, UserListItem } from './types'
 
-const API_BASE = 'http://localhost:5120/api/users'
+const API_BASE = '/api/users'
 
 export function useUsersData() {
     const [users, setUsers] = useState<UserListItem[]>([])

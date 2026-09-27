@@ -11,13 +11,16 @@ namespace DlfVoting.Api.Tests;
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     // The pool stays below Postgres' max_connections (100 by default), so a burst of requests queues for a
-    // connection instead of being refused by the server.
-    public const string TestConnectionString =
-        "Host=localhost;Database=dlf_voting_test;Username=" + "claomike" + ";Maximum Pool Size=40";
+    // connection instead of being refused by the server. CI points this at its own database via DLFVOTING_TEST_DB.
+    public static readonly string TestConnectionString =
+        Environment.GetEnvironmentVariable("DLFVOTING_TEST_DB")
+        ?? "Host=localhost;Database=dlf_voting_test;Username=" + "claomike" + ";Maximum Pool Size=40";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        // Tests sign the same accounts in many times a minute; LoginRateLimitTests turn the limit back down.
+        builder.UseSetting("LoginRateLimit:PermitLimit", "1000000");
 
         builder.ConfigureServices(services =>
         {

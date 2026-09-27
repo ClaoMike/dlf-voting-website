@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { isValidPassword } from '../../../utils/validation'
 
-const CHANGE_PASSWORD_API = 'http://localhost:5120/api/administrators/me/password'
+const CHANGE_PASSWORD_API = '/api/administrators/me/password'
 
 export function useChangePassword() {
     const [newPassword, setNewPassword] = useState('')

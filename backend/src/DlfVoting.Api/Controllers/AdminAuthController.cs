@@ -12,11 +12,13 @@ namespace DlfVoting.Api.Controllers;
 public class AdminAuthController : ControllerBase
 {
     private readonly DlfVotingDbContext _db;
-    
+    private readonly LoginAttemptLimiter _loginAttempts;
+
     // ReSharper disable once ConvertToPrimaryConstructor
-    public AdminAuthController(DlfVotingDbContext db)
+    public AdminAuthController(DlfVotingDbContext db, LoginAttemptLimiter loginAttempts)
     {
         _db = db;
+        _loginAttempts = loginAttempts;
     }
 
     public record LoginRequest(string Username, string Password);
@@ -24,6 +26,12 @@ public class AdminAuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
+        if (!_loginAttempts.TryAttempt(AuthSchemes.Admin, request.Username))
+        {
+            Response.Headers.RetryAfter = "300";
+            return StatusCode(StatusCodes.Status429TooManyRequests, new { message = LoginAttemptLimiter.TooManyAttemptsMessage });
+        }
+
         var admin = await _db.Administrators
             .FirstOrDefaultAsync(a => a.Username == request.Username.Trim());
 

@@ -1,9 +1,10 @@
 ﻿using DlfVoting.Domain;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DlfVoting.Infrastructure;
 
-public class DlfVotingDbContext : DbContext
+public class DlfVotingDbContext : DbContext, IDataProtectionKeyContext
 {   
     // ReSharper disable once ConvertToPrimaryConstructor
     public DlfVotingDbContext(DbContextOptions<DlfVotingDbContext> options)
@@ -16,6 +17,10 @@ public class DlfVotingDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<VotingSettings> VotingSettings => Set<VotingSettings>();
+
+    // The keys that encrypt the session cookies. Kept in the database so sessions survive restarts and redeploys,
+    // and every app instance can read every other instance's cookies.
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     
     // ICU nondeterministic collation: equality and unique indexes ignore case ("JDoe" == "jdoe").
     public const string CaseInsensitiveCollation = "case_insensitive";

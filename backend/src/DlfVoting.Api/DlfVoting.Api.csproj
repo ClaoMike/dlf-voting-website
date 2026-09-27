@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Local secrets such as InitialAdmin:Password: dotnet user-secrets set ... (see docs/deployment.md). -->
+    <UserSecretsId>ef2e7c0d-12d4-4679-a3d9-7f8c29dfdff1</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,11 +16,38 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DlfVoting.Application\DlfVoting.Application.csproj" />
     <ProjectReference Include="..\DlfVoting.Infrastructure\DlfVoting.Infrastructure.csproj" />
   </ItemGroup>
+
+  <!-- Local-only settings never go into the published app. -->
+  <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <!--
+    dotnet publish also builds the React app and ships it in wwwroot, so one published folder is the whole site.
+    Skip with -p:SkipFrontendBuild=true (e.g. when a CI step already built the frontend).
+  -->
+  <PropertyGroup>
+    <FrontendRoot>$(MSBuildProjectDirectory)/../../../frontend/</FrontendRoot>
+  </PropertyGroup>
+
+  <Target Name="PublishFrontend" AfterTargets="ComputeFilesToPublish" Condition="'$(SkipFrontendBuild)' != 'true'">
+    <Exec Command="npm ci" WorkingDirectory="$(FrontendRoot)" />
+    <Exec Command="npm run build" WorkingDirectory="$(FrontendRoot)" />
+    <ItemGroup>
+      <FrontendDistFiles Include="$(FrontendRoot)dist/**" />
+      <ResolvedFileToPublish Include="@(FrontendDistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
+        <RelativePath>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 
 </Project>

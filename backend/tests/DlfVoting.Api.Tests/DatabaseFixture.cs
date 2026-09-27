@@ -28,7 +28,8 @@ public class DatabaseFixture : IAsyncLifetime, IAsyncDisposable
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public"],
-            TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory")]
+            // The cookie-encryption keys survive resets, as they would survive a redeploy.
+            TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory"), new Respawn.Graph.Table("DataProtectionKeys")]
         });
     }
 

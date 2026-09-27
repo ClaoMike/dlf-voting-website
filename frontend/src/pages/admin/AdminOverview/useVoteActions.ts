@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { VoteRow } from './types'
 
-const VOTES_API = 'http://localhost:5120/api/votes'
+const VOTES_API = '/api/votes'
 
 export function useVoteActions(onChanged: () => Promise<void>) {
     const [editingVote, setEditingVote] = useState<VoteRow | null>(null)
