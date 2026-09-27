@@ -20,7 +20,8 @@ function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChan
             <table className="voting-options-table">
                 <thead>
                 <tr>
-                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Username</th>
                     <th>Vote</th>
                     <th></th>
                 </tr>
@@ -28,7 +29,8 @@ function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChan
                 <tbody>
                 {votes.map((vote) => (
                     <tr key={vote.userId}>
-                        <td>{vote.email}</td>
+                        <td>{[vote.firstName, vote.lastName].filter(Boolean).join(' ')}</td>
+                        <td>{vote.username}</td>
                         <td>{vote.votingOptionName ?? ''}</td>
                         <td className="voting-options-actions">
                             <button className="voting-options-edit" onClick={() => onEdit(vote)}>

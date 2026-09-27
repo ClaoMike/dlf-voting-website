@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import PasswordField from './PasswordField/PasswordField'
-import { isValidEmail, isValidPassword } from '../utils/validation'
+import { isValidEmail, isValidPassword, isValidUsername, USERNAME_MIN_LENGTH } from '../utils/validation'
 
 import './ConfirmDialog/ConfirmDialog.css'
 
 type CreateUserDialogProps = {
-    onCreate: (email: string, password: string) => void
+    onCreate: (username: string, email: string | null, password: string) => void
     onCancel: () => void
     error: string | null
+    usernameMaxLength: number
+    // Admins must have an email; users are created without one.
+    emailField: 'required' | 'hidden'
     title?: string
     submitLabel?: string
 }
@@ -16,15 +19,20 @@ function CreateUserDialog({
                               onCreate,
                               onCancel,
                               error,
+                              usernameMaxLength,
+                              emailField,
                               title = 'New user',
                               submitLabel = 'Create user',
                           }: CreateUserDialogProps) {
+    const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
 
-    const emailValid = isValidEmail(email)
+    const trimmedEmail = email.trim()
+    const usernameValid = isValidUsername(username, usernameMaxLength)
+    const emailValid = emailField === 'hidden' || isValidEmail(trimmedEmail)
     const passwordValid = isValidPassword(password)
-    const canSubmit = emailValid && passwordValid
+    const canSubmit = usernameValid && emailValid && passwordValid
 
     return (
         <div className="confirm-dialog-overlay">
@@ -33,13 +41,31 @@ function CreateUserDialog({
 
                 <input
                     className="confirm-dialog-input"
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    autoCapitalize="none"
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                 />
-                {email.length > 0 && !emailValid && (
-                    <p className="voting-options-error">Enter a valid email address.</p>
+                {username.length > 0 && !usernameValid && (
+                    <p className="voting-options-error">
+                        Username must be {USERNAME_MIN_LENGTH}-{usernameMaxLength} characters without spaces.
+                    </p>
+                )}
+
+                {emailField === 'required' && (
+                    <>
+                        <input
+                            className="confirm-dialog-input"
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                        {trimmedEmail.length > 0 && !emailValid && (
+                            <p className="voting-options-error">Enter a valid email address.</p>
+                        )}
+                    </>
                 )}
 
                 <PasswordField value={password} onChange={setPassword} />
@@ -59,7 +85,7 @@ function CreateUserDialog({
                     <button
                         className="confirm-dialog-confirm confirm-dialog-save"
                         disabled={!canSubmit}
-                        onClick={() => onCreate(email.trim(), password)}
+                        onClick={() => onCreate(username.trim(), emailField === 'hidden' ? null : trimmedEmail, password)}
                     >
                         {submitLabel}
                     </button>

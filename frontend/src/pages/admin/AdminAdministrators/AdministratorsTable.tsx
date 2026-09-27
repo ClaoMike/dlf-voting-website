@@ -2,7 +2,7 @@ import type { Administrator } from './types'
 
 type AdministratorsTableProps = {
     admins: Administrator[]
-    currentAdminEmail: string | null
+    currentAdminUsername: string | null
     page: number
     totalPages: number
     onEdit: (admin: Administrator) => void
@@ -12,7 +12,7 @@ type AdministratorsTableProps = {
 
 function AdministratorsTable({
                                  admins,
-                                 currentAdminEmail,
+                                 currentAdminUsername,
                                  page,
                                  totalPages,
                                  onEdit,
@@ -24,17 +24,17 @@ function AdministratorsTable({
             <table className="voting-options-table">
                 <thead>
                 <tr>
-                    <th>Email</th>
+                    <th>Username</th>
                     <th>Created</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 {admins.map((admin) => {
-                    const isSelf = admin.email === currentAdminEmail
+                    const isSelf = admin.username === currentAdminUsername
                     return (
                         <tr key={admin.id}>
-                            <td>{admin.email}</td>
+                            <td>{admin.username}</td>
                             <td>{new Date(admin.createdAt).toLocaleDateString()}</td>
                             <td className="voting-options-actions">
                                 {isSelf ? (

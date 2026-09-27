@@ -2,11 +2,17 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 type LoginResult = { success: boolean; error?: string }
 
+function toFullName(body: { firstName?: string | null; lastName?: string | null }) {
+    return [body.firstName, body.lastName].filter(Boolean).join(' ') || null
+}
+
 type UserAuthContextType = {
     isAuthenticated: boolean
     isLoading: boolean
-    email: string | null
-    login: (email: string, password: string) => Promise<LoginResult>
+    username: string | null
+    // "First Last" from the employee import; null when the user has no name on record.
+    fullName: string | null
+    login: (username: string, password: string) => Promise<LoginResult>
     logout: () => Promise<void>
 }
 
@@ -15,7 +21,8 @@ const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined
 export function UserAuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
-    const [email, setEmail] = useState<string | null>(null)
+    const [username, setUsername] = useState<string | null>(null)
+    const [fullName, setFullName] = useState<string | null>(null)
 
     const checkSession = async () => {
         try {
@@ -24,7 +31,8 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
             })
             if (res.ok) {
                 const body = await res.json()
-                setEmail(body.email)
+                setUsername(body.username)
+                setFullName(toFullName(body))
                 setIsAuthenticated(true)
             } else {
                 setIsAuthenticated(false)
@@ -40,26 +48,30 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         void checkSession()
     }, [])
 
-    const login = async (loginEmail: string, password: string): Promise<LoginResult> => {
+    const login = async (loginUsername: string, password: string): Promise<LoginResult> => {
         const res = await fetch('http://localhost:5120/api/auth/user/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ email: loginEmail, password }),
+            body: JSON.stringify({ username: loginUsername, password }),
         })
 
         if (!res.ok) {
-            return { success: false, error: 'Invalid email or password.' }
+            return { success: false, error: 'Invalid username or password.' }
         }
 
-        setEmail(loginEmail)
+        // Use the stored username rather than what was typed, since login is case-insensitive.
+        const body = await res.json()
+        setUsername(body.username)
+        setFullName(toFullName(body))
         setIsAuthenticated(true)
         return { success: true }
     }
 
     const logout = async () => {
         setIsAuthenticated(false)
-        setEmail(null)
+        setUsername(null)
+        setFullName(null)
         await fetch('http://localhost:5120/api/auth/user/logout', {
             method: 'POST',
             credentials: 'include',
@@ -67,7 +79,7 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <UserAuthContext.Provider value={{ isAuthenticated, isLoading, email, login, logout }}>
+        <UserAuthContext.Provider value={{ isAuthenticated, isLoading, username, fullName, login, logout }}>
             {children}
         </UserAuthContext.Provider>
     )

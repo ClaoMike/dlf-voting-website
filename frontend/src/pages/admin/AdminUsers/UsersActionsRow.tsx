@@ -26,12 +26,12 @@ function UsersActionsRow({
             </button>
 
             <button className="voting-options-add-row-button" onClick={onImportClick} disabled={isImporting}>
-                {isImporting ? 'Importing...' : 'Import users from CSV'}
+                {isImporting ? 'Importing...' : 'Import users from Excel'}
             </button>
 
             <input
                 type="file"
-                accept=".csv,text/csv"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 ref={fileInputRef}
                 onChange={onFileSelected}
                 style={{ display: 'none' }}

@@ -2,35 +2,31 @@ import { useState, type SubmitEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './LoginForm.css'
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 type LoginResult = { success: boolean; error?: string }
 
 type LoginFormProps = {
     title: string
-    login: (email: string, password: string) => Promise<LoginResult>
+    login: (username: string, password: string) => Promise<LoginResult>
     redirectTo: string
 }
 
 function LoginForm({ title, login, redirectTo }: LoginFormProps) {
-    const [email, setEmail] = useState('')
+    const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [serverError, setServerError] = useState<string | null>(null)
     const navigate = useNavigate()
 
-    const isEmailValid = EMAIL_REGEX.test(email)
-    const isPasswordValid = password.length > 0
-    const isFormValid = isEmailValid && isPasswordValid
+    const isFormValid = username.trim().length > 0 && password.length > 0
 
     const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (!isFormValid) return
 
         setServerError(null)
-        const result = await login(email, password)
+        const result = await login(username.trim(), password)
 
         if (!result.success) {
-            setServerError(result.error ?? 'Invalid email or password.')
+            setServerError(result.error ?? 'Invalid username or password.')
             return
         }
 
@@ -41,17 +37,16 @@ function LoginForm({ title, login, redirectTo }: LoginFormProps) {
         <div className="login-page">
             <h1 className="login-title">{title}</h1>
             <form className="login-form" onSubmit={handleSubmit}>
-                <label htmlFor="email">Email</label>
+                <label htmlFor="username">Username</label>
                 <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    id="username"
+                    type="text"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
                 />
-                {email.length > 0 && !isEmailValid && (
-                    <span className="field-error">Enter a valid email address</span>
-                )}
 
                 <label htmlFor="password">Password</label>
                 <input

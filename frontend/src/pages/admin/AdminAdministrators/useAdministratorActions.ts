@@ -13,16 +13,16 @@ export function useAdministratorActions(onChanged: (page: number) => Promise<voi
     const [deletingAdmin, setDeletingAdmin] = useState<Administrator | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
 
-    const [revealPassword, setRevealPassword] = useState<{ email: string; password: string } | null>(null)
+    const [revealPassword, setRevealPassword] = useState<{ accountName: string; password: string } | null>(null)
 
-    const create = async (email: string, password: string) => {
+    const create = async (username: string, email: string | null, password: string) => {
         setCreateError(null)
         try {
             const res = await fetch(API_BASE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ username, email, password }),
             })
 
             if (!res.ok) {
@@ -32,14 +32,14 @@ export function useAdministratorActions(onChanged: (page: number) => Promise<voi
             }
 
             setShowCreate(false)
-            setRevealPassword({ email, password })
+            setRevealPassword({ accountName: username, password })
             await onChanged(1)
         } catch {
             setCreateError('Failed to create administrator.')
         }
     }
 
-    const saveEdit = async (newEmail: string | null, newPassword: string | null) => {
+    const saveEdit = async (newUsername: string, newEmail: string | null, newPassword: string | null) => {
         if (!editingAdmin) return
 
         setEditError(null)
@@ -48,7 +48,7 @@ export function useAdministratorActions(onChanged: (page: number) => Promise<voi
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email: newEmail, password: newPassword }),
+                body: JSON.stringify({ username: newUsername, email: newEmail, password: newPassword }),
             })
 
             if (!res.ok) {
@@ -57,12 +57,11 @@ export function useAdministratorActions(onChanged: (page: number) => Promise<voi
                 return
             }
 
-            const finalEmail = newEmail ?? editingAdmin.email
             setEditingAdmin(null)
             await onChanged(currentPage)
 
             if (newPassword) {
-                setRevealPassword({ email: finalEmail, password: newPassword })
+                setRevealPassword({ accountName: newUsername, password: newPassword })
             }
         } catch {
             setEditError('Failed to update administrator.')

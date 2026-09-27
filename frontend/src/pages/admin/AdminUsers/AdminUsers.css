@@ -46,3 +46,68 @@
     color: var(--text, #6b6375);
     font-style: italic;
 }
+.users-table-row {
+    cursor: pointer;
+}
+
+.users-table-row:hover {
+    background-color: var(--accent-bg, #f4f0f7);
+}
+
+.user-details-list {
+    margin: 0 0 1.5rem;
+    text-align: left;
+}
+
+.user-details-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border, #e5e4e7);
+}
+
+.user-details-item dt {
+    color: var(--text, #6b6375);
+}
+
+.user-details-item dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.import-users-dialog {
+    max-width: 440px;
+}
+
+.import-users-option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+    margin-bottom: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border, #e5e4e7);
+    border-radius: 6px;
+    background-color: white;
+    text-align: left;
+    cursor: pointer;
+}
+
+.import-users-option:hover {
+    border-color: var(--accent);
+}
+
+.import-users-option span {
+    font-size: 0.85rem;
+    color: var(--text, #6b6375);
+}
+
+.import-warnings {
+    margin: 0 0 1rem;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text, #6b6375);
+}

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { PagedUsers, User } from './types'
+import type { PagedUsers, UserListItem } from './types'
 
 const API_BASE = 'http://localhost:5120/api/users'
 
 export function useUsersData() {
-    const [users, setUsers] = useState<User[]>([])
+    const [users, setUsers] = useState<UserListItem[]>([])
     const [page, setPage] = useState(1)
     const [totalCount, setTotalCount] = useState(0)
     const [pageSize, setPageSize] = useState(25)

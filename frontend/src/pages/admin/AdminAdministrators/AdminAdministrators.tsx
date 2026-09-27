@@ -3,6 +3,7 @@ import CreateUserDialog from '../../../components/CreateUserDialog'
 import EditUserDialog from '../../../components/EditUserDialog'
 import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
 import { useAdminAuth } from '../../../context/AdminAuthContext'
+import { ADMIN_USERNAME_MAX_LENGTH } from '../../../utils/validation'
 import AdministratorsTable from './AdministratorsTable'
 import { useAdministratorsData } from './useAdministratorsData'
 import { useAdministratorActions } from './useAdministratorActions'
@@ -11,7 +12,7 @@ import '../AdminVotingOptions/AdminVotingOptions.css'
 import '../AdminUsers/AdminUsers.css'
 
 function AdminAdministrators() {
-    const { email: currentAdminEmail } = useAdminAuth()
+    const { username: currentAdminUsername } = useAdminAuth()
     const data = useAdministratorsData()
     const actions = useAdministratorActions(data.fetchAdmins, data.page)
 
@@ -32,7 +33,7 @@ function AdminAdministrators() {
             ) : (
                 <AdministratorsTable
                     admins={data.admins}
-                    currentAdminEmail={currentAdminEmail}
+                    currentAdminUsername={currentAdminUsername}
                     page={data.page}
                     totalPages={data.totalPages}
                     onEdit={actions.startEdit}
@@ -45,6 +46,8 @@ function AdminAdministrators() {
                 <CreateUserDialog
                     title="New administrator"
                     submitLabel="Create administrator"
+                    usernameMaxLength={ADMIN_USERNAME_MAX_LENGTH}
+                    emailField="required"
                     onCreate={actions.create}
                     onCancel={actions.cancelCreate}
                     error={actions.createError}
@@ -54,7 +57,10 @@ function AdminAdministrators() {
             {actions.editingAdmin && (
                 <EditUserDialog
                     title="Edit administrator"
-                    initialEmail={actions.editingAdmin.email}
+                    initialUsername={actions.editingAdmin.username}
+                    initialEmail={null}
+                    usernameMaxLength={ADMIN_USERNAME_MAX_LENGTH}
+                    emailField="keep-if-blank"
                     onSave={actions.saveEdit}
                     onCancel={actions.cancelEdit}
                     error={actions.editError}
@@ -64,7 +70,7 @@ function AdminAdministrators() {
             {actions.deletingAdmin && (
                 <ConfirmDialog
                     title="Remove administrator"
-                    message={`Are you sure you want to remove "${actions.deletingAdmin.email}"?`}
+                    message={`Are you sure you want to remove "${actions.deletingAdmin.username}"?`}
                     confirmLabel="Remove"
                     onConfirm={actions.confirmDelete}
                     onCancel={actions.cancelDelete}
@@ -73,7 +79,7 @@ function AdminAdministrators() {
 
             {actions.revealPassword && (
                 <PasswordRevealDialog
-                    email={actions.revealPassword.email}
+                    accountName={actions.revealPassword.accountName}
                     password={actions.revealPassword.password}
                     onClose={actions.closeReveal}
                 />

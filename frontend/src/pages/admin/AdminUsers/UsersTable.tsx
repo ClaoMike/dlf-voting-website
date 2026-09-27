@@ -1,35 +1,48 @@
-import type { User } from './types'
+import type { UserListItem } from './types'
 
 type UsersTableProps = {
-    users: User[]
+    users: UserListItem[]
     page: number
     totalPages: number
-    onEdit: (user: User) => void
-    onDelete: (user: User) => void
+    onSelect: (user: UserListItem) => void
+    onEdit: (user: UserListItem) => void
+    onDelete: (user: UserListItem) => void
     onPageChange: (newPage: number) => void
 }
 
-function UsersTable({ users, page, totalPages, onEdit, onDelete, onPageChange }: UsersTableProps) {
+function UsersTable({ users, page, totalPages, onSelect, onEdit, onDelete, onPageChange }: UsersTableProps) {
     return (
         <>
             <table className="voting-options-table">
                 <thead>
                 <tr>
-                    <th>Email</th>
-                    <th>Created</th>
+                    <th>Name</th>
+                    <th>Username</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 {users.map((user) => (
-                    <tr key={user.id}>
-                        <td>{user.email}</td>
-                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                    <tr key={user.id} className="users-table-row" onClick={() => onSelect(user)}>
+                        <td>{user.name ?? ''}</td>
+                        <td>{user.username}</td>
                         <td className="voting-options-actions">
-                            <button className="voting-options-edit" onClick={() => onEdit(user)}>
+                            <button
+                                className="voting-options-edit"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onEdit(user)
+                                }}
+                            >
                                 Edit
                             </button>
-                            <button className="voting-options-remove" onClick={() => onDelete(user)}>
+                            <button
+                                className="voting-options-remove"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onDelete(user)
+                                }}
+                            >
                                 Remove
                             </button>
                         </td>

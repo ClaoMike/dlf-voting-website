@@ -1,6 +1,8 @@
 export type VoteRow = {
     userId: string
-    email: string
+    username: string
+    firstName: string | null
+    lastName: string | null
     votingOptionId: string | null
     votingOptionName: string | null
     updatedAt: string | null

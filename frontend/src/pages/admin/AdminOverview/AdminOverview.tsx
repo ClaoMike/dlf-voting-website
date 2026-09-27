@@ -52,7 +52,7 @@ function AdminOverview() {
             {actions.deletingVote && (
                 <ConfirmDialog
                     title="Remove vote"
-                    message={`Are you sure you want to remove ${actions.deletingVote.email}'s vote?`}
+                    message={`Are you sure you want to remove ${actions.deletingVote.username}'s vote?`}
                     confirmLabel="Remove"
                     onConfirm={actions.confirmDelete}
                     onCancel={actions.cancelDelete}

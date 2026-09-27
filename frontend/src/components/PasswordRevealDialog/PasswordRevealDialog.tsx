@@ -4,12 +4,12 @@ import '../ConfirmDialog/ConfirmDialog.css'
 import './PasswordRevealDialog.css'
 
 type PasswordRevealDialogProps = {
-    email: string
+    accountName: string
     password: string
     onClose: () => void
 }
 
-function PasswordRevealDialog({ email, password, onClose }: PasswordRevealDialogProps) {
+function PasswordRevealDialog({ accountName, password, onClose }: PasswordRevealDialogProps) {
     const [copied, setCopied] = useState(false)
 
     const handleCopy = async () => {
@@ -20,7 +20,7 @@ function PasswordRevealDialog({ email, password, onClose }: PasswordRevealDialog
     return (
         <div className="confirm-dialog-overlay">
             <div className="confirm-dialog" role="dialog" aria-modal="true">
-                <h2 className="confirm-dialog-title">Password for {email}</h2>
+                <h2 className="confirm-dialog-title">Password for {accountName}</h2>
                 <p className="password-reveal-value">{password}</p>
                 <p className="password-reveal-warning">
                     This password will not be shown again once you close this window. Make sure to copy

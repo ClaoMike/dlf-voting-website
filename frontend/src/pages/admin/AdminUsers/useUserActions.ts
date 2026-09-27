@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { User } from './types'
+import type { User, UserListItem } from './types'
 
 const API_BASE = 'http://localhost:5120/api/users'
 
@@ -10,21 +10,24 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
     const [editingUser, setEditingUser] = useState<User | null>(null)
     const [editError, setEditError] = useState<string | null>(null)
 
-    const [deletingUser, setDeletingUser] = useState<User | null>(null)
+    const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+    const [deletingUser, setDeletingUser] = useState<UserListItem | null>(null)
+    const [loadError, setLoadError] = useState<string | null>(null)
     const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false)
 
     const [removeAllError, setRemoveAllError] = useState<string | null>(null)
 
-    const [revealPassword, setRevealPassword] = useState<{ email: string; password: string } | null>(null)
+    const [revealPassword, setRevealPassword] = useState<{ accountName: string; password: string } | null>(null)
 
-    const create = async (email: string, password: string) => {
+    const create = async (username: string, email: string | null, password: string) => {
         setCreateError(null)
         try {
             const res = await fetch(API_BASE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ username, email, password }),
             })
 
             if (!res.ok) {
@@ -34,14 +37,41 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
             }
 
             setShowCreate(false)
-            setRevealPassword({ email, password })
+            setRevealPassword({ accountName: username, password })
             await onChanged(1)
         } catch {
             setCreateError('Failed to create user.')
         }
     }
 
-    const saveEdit = async (newEmail: string | null, newPassword: string | null) => {
+    // The table only has name and username, so details and edit load the full user first.
+    const fetchUser = async (item: UserListItem): Promise<User | null> => {
+        setLoadError(null)
+        try {
+            const res = await fetch(`${API_BASE}/${item.id}`, { credentials: 'include' })
+            if (!res.ok) {
+                const body = await res.json().catch(() => null)
+                setLoadError(body?.message ?? 'Could not load this user.')
+                return null
+            }
+            return await res.json()
+        } catch {
+            setLoadError('Could not load this user.')
+            return null
+        }
+    }
+
+    const selectUser = async (item: UserListItem) => {
+        const user = await fetchUser(item)
+        if (user) setSelectedUser(user)
+    }
+
+    const startEdit = async (item: UserListItem) => {
+        const user = await fetchUser(item)
+        if (user) setEditingUser(user)
+    }
+
+    const saveEdit = async (newUsername: string, newEmail: string | null, newPassword: string | null) => {
         if (!editingUser) return
 
         setEditError(null)
@@ -50,7 +80,7 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email: newEmail, password: newPassword }),
+                body: JSON.stringify({ username: newUsername, email: newEmail, password: newPassword }),
             })
 
             if (!res.ok) {
@@ -59,12 +89,11 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
                 return
             }
 
-            const finalEmail = newEmail ?? editingUser.email
             setEditingUser(null)
             await onChanged(currentPage)
 
             if (newPassword) {
-                setRevealPassword({ email: finalEmail, password: newPassword })
+                setRevealPassword({ accountName: newUsername, password: newPassword })
             }
         } catch {
             setEditError('Failed to update user.')
@@ -118,12 +147,16 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
 
         editingUser,
         editError,
-        startEdit: setEditingUser,
+        startEdit,
         cancelEdit: () => {
             setEditingUser(null)
             setEditError(null)
         },
         saveEdit,
+
+        selectedUser,
+        selectUser,
+        closeDetails: () => setSelectedUser(null),
 
         deletingUser,
         startDelete: setDeletingUser,
@@ -136,6 +169,7 @@ export function useUserActions(onChanged: (page: number) => Promise<void>, curre
         confirmRemoveAll,
 
         removeAllError,
+        loadError,
 
         revealPassword,
         closeReveal: () => setRevealPassword(null),

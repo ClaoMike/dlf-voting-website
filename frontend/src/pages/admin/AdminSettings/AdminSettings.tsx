@@ -8,7 +8,7 @@ import ChangePasswordSection from './ChangePasswordSection'
 import './AdminSettings.css'
 
 function AdminSettings() {
-    const { email } = useAdminAuth()
+    const { username } = useAdminAuth()
     const votingStatus = useVotingStatus()
     const changePassword = useChangePassword()
 
@@ -35,9 +35,9 @@ function AdminSettings() {
                 onSubmit={changePassword.submit}
             />
 
-            {changePassword.revealPassword && email && (
+            {changePassword.revealPassword && username && (
                 <PasswordRevealDialog
-                    email={email}
+                    accountName={username}
                     password={changePassword.revealPassword}
                     onClose={changePassword.closeReveal}
                 />
