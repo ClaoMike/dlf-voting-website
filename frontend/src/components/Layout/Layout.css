@@ -5,9 +5,39 @@
 }
 
 .app-content {
+    /* Pages that bleed to the edges (the grass band) use this to undo the padding. */
+    --content-padding: 2rem;
     flex: 1;
-    padding: 2rem;
+    min-width: 0;
+    padding: var(--content-padding);
     box-sizing: border-box;
+}
+
+/* The voter pages stretch to the bottom of the content area (their grass band sits on the edge). */
+.app-content:has(> .login-page, > .welcome-page) {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-content:focus {
+    outline: none;
+}
+
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 1rem;
+    z-index: 2000;
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    background-color: var(--accent-strong);
+    color: white;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 1rem;
 }
 
 .app-sidebar {
@@ -75,7 +105,7 @@
 
 .nav-link.active {
     background-color: var(--accent-bg);
-    color: var(--accent);
+    color: var(--accent-strong);
     font-weight: 600;
 }
 
@@ -104,4 +134,71 @@
 
 .sidebar-switch-login:hover {
     background-color: #f5f5f5;
+}
+
+/* Phones and small tablets: the sidebar becomes a compact bar above the page. */
+@media (max-width: 768px) {
+    .app-shell {
+        flex-direction: column;
+    }
+
+    .app-content {
+        --content-padding: 1rem;
+    }
+
+    .app-sidebar {
+        width: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        padding: 0.6rem 1rem;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-header {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .sidebar-logo {
+        width: 48px;
+    }
+
+    .sidebar-signout,
+    .sidebar-switch-login,
+    .sidebar-signout-row {
+        width: auto;
+        margin-top: 0;
+    }
+
+    .sidebar-signout-row {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .sidebar-signout,
+    .sidebar-switch-login {
+        min-height: 44px;
+        padding: 0.5rem 0.9rem;
+    }
+
+    /* Admin links: one scrollable row instead of a tall list. */
+    .sidebar-nav-wrapper {
+        order: 3;
+        flex-basis: 100%;
+        overflow-x: auto;
+    }
+
+    .sidebar-nav {
+        flex-direction: row;
+        margin: 0;
+    }
+
+    .nav-link {
+        white-space: nowrap;
+    }
 }

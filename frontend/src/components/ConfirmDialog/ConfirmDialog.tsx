@@ -1,3 +1,5 @@
+import { useId } from 'react'
+import Modal from '../Modal/Modal'
 import './ConfirmDialog.css'
 
 type ConfirmDialogProps = {
@@ -17,21 +19,21 @@ function ConfirmDialog({
                            onConfirm,
                            onCancel,
                        }: ConfirmDialogProps) {
+    const titleId = useId()
+
     return (
-        <div className="confirm-dialog-overlay">
-            <div className="confirm-dialog" role="dialog" aria-modal="true">
-                <h2 className="confirm-dialog-title">{title}</h2>
-                <p className="confirm-dialog-message">{message}</p>
-                <div className="confirm-dialog-actions">
-                    <button className="confirm-dialog-cancel" onClick={onCancel}>
-                        {cancelLabel}
-                    </button>
-                    <button className="confirm-dialog-confirm" onClick={onConfirm}>
-                        {confirmLabel}
-                    </button>
-                </div>
+        <Modal titleId={titleId} onClose={onCancel}>
+            <h2 id={titleId} className="confirm-dialog-title">{title}</h2>
+            <p className="confirm-dialog-message">{message}</p>
+            <div className="confirm-dialog-actions">
+                <button className="confirm-dialog-cancel" onClick={onCancel}>
+                    {cancelLabel}
+                </button>
+                <button className="confirm-dialog-confirm" onClick={onConfirm}>
+                    {confirmLabel}
+                </button>
             </div>
-        </div>
+        </Modal>
     )
 }
 

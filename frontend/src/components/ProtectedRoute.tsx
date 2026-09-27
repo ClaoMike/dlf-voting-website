@@ -5,7 +5,7 @@ import { useUserAuth } from '../context/UserAuthContext'
 export function AdminProtectedRoute() {
     const { isAuthenticated, isLoading } = useAdminAuth()
 
-    if (isLoading) return <div>Loading...</div>
+    if (isLoading) return <p role="status">Loading…</p>
     if (!isAuthenticated) return <Navigate to="/login/admin" replace />
 
     return <Outlet />
@@ -14,7 +14,7 @@ export function AdminProtectedRoute() {
 export function UserProtectedRoute() {
     const { isAuthenticated, isLoading } = useUserAuth()
 
-    if (isLoading) return <div>Loading...</div>
+    if (isLoading) return <p role="status">Loading…</p>
     if (!isAuthenticated) return <Navigate to="/login" replace />
 
     return <Outlet />

@@ -7,7 +7,7 @@ function AdminLogin() {
     const { login } = useAdminAuth()
     const { isAuthenticated: isUserAuthenticated, isLoading: isUserLoading } = useUserAuth()
 
-    if (isUserLoading) return <div>Loading...</div>
+    if (isUserLoading) return <p role="status">Loading…</p>
     if (isUserAuthenticated) return <Navigate to="/welcome" replace />
 
     return <LoginForm title="Administration" login={login} redirectTo="/admin/overview" />

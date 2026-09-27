@@ -10,12 +10,27 @@
 
 .confirm-dialog {
     background-color: #ffffff;
+    border: none;
     border-radius: 8px;
     padding: 1.75rem;
     width: 100%;
     max-width: 360px;
+    box-sizing: border-box;
+    color: var(--text-h);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     text-align: center;
+}
+
+/* Native <dialog>: the browser draws the dimmed backdrop. */
+.confirm-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 480px) {
+    .confirm-dialog {
+        max-width: calc(100vw - 2rem);
+        padding: 1.25rem;
+    }
 }
 
 .confirm-dialog-title {
@@ -67,28 +82,36 @@
     width: 100%;
     padding: 0.6rem 0.75rem;
     margin-bottom: 1.5rem;
-    border: 1px solid var(--border, #e5e4e7);
+    border: 1px solid var(--border-strong);
     border-radius: 4px;
     font-size: 1rem;
     box-sizing: border-box;
 }
 
 .confirm-dialog-input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg);
+    border-color: var(--accent-strong);
 }
 
 .confirm-dialog-save {
-    background-color: var(--accent);
+    background-color: var(--accent-strong);
 }
 
 .confirm-dialog-save:hover {
-    background-color: var(--accent);
+    background-color: var(--accent-strong);
     filter: brightness(0.9);
 }
 
 .confirm-dialog-save:disabled {
-    background-color: #d0c3d9;
+    background-color: #e4e4e4;
+    color: #6b6b6b;
     cursor: not-allowed;
+}
+/* The option list inside "Change your vote": scrolls when there are many options. */
+.edit-vote-options {
+    max-height: 55svh;
+    margin-bottom: 1.5rem;
+    /* Room for the focus ring of the first and last option. */
+    padding: 4px;
+    overflow-y: auto;
+    text-align: left;
 }

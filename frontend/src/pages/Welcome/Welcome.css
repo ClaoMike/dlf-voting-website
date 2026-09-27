@@ -1,71 +1,139 @@
+/* Full-height column: greeting, ballot card, grass along the bottom edge. */
 .welcome-page {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 2rem;
+    flex: 1;
+    margin-bottom: calc(-1 * var(--content-padding));
+}
+
+.welcome-header {
+    margin-top: 1rem;
+    text-align: center;
+    max-width: 640px;
+}
+
+.welcome-header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    letter-spacing: -0.8px;
+}
+
+.welcome-name {
+    overflow-wrap: anywhere;
 }
 
 .vote-section {
+    width: 100%;
+    max-width: 480px;
     margin-top: 2rem;
+}
+
+.vote-card {
     display: flex;
     flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.75rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--accent);
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: var(--shadow);
+}
+
+.vote-card-centered {
     align-items: center;
-    gap: 1rem;
-    width: 100%;
-    max-width: 320px;
+    text-align: center;
 }
 
-.vote-select {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border, #e5e4e7);
-    border-radius: 4px;
-    font-size: 1rem;
-    background-color: white;
+.vote-card h2 {
+    margin: 0;
 }
 
-.vote-select:focus {
+.vote-card h2:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
-.vote-submit {
-    padding: 0.6rem 1.5rem;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--accent);
+.vote-choice {
+    color: var(--text-h);
+    overflow-wrap: anywhere;
+}
+
+.vote-meta {
+    font-size: 0.85rem;
+}
+
+.vote-problem {
+    margin: 0;
+    color: #c0392b;
+    font-size: 0.9rem;
+}
+
+.vote-problem:empty {
+    display: none;
+}
+
+.vote-problem a {
+    color: var(--accent-strong);
+    font-weight: 600;
+}
+
+.vote-button {
+    min-height: 48px;
+    padding: 0.7rem 1.5rem;
+    border: 2px solid var(--accent-strong);
+    border-radius: 6px;
+    background-color: var(--accent-strong);
     color: white;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
 }
 
-.vote-submit:disabled {
-    background-color: #d0c3d9;
-    cursor: not-allowed;
+.vote-button:hover {
+    filter: brightness(0.92);
 }
 
-.welcome-page h1 {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    row-gap: 2rem;
-    column-gap: 0.4rem;
-    text-align: center;
-    max-width: 90vw;
+.vote-button[aria-disabled='true'] {
+    cursor: progress;
+    opacity: 0.8;
 }
 
-.welcome-email {
-    word-break: break-word;
-    overflow-wrap: anywhere;
+.vote-button-secondary {
+    background-color: #ffffff;
+    color: var(--accent-strong);
 }
 
-.current-vote-text {
-    font-size: 1.05rem;
+.vote-button-secondary:hover {
+    background-color: var(--accent-soft);
+    filter: none;
 }
 
-.voting-closed-message {
-    font-size: 1.1rem;
-    color: var(--text, #6b6375);
+.welcome-page .grass-band {
+    margin-top: auto;
+    padding-top: 2.5rem;
+    /* Bleed past the content padding so the grass meets the edges. */
+    /* An <svg> won't stretch like a block, so give it the width explicitly. */
+    width: calc(100% + 2 * var(--content-padding));
+    margin-left: calc(-1 * var(--content-padding));
+    margin-right: calc(-1 * var(--content-padding));
+}
+
+@media (max-width: 768px) {
+    .welcome-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .vote-section {
+        margin-top: 1.25rem;
+    }
+
+    .vote-card {
+        padding: 1.25rem;
+    }
+
+    .vote-button {
+        width: 100%;
+    }
 }

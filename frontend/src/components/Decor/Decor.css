@@ -1,0 +1,12 @@
+.grass-band {
+    display: block;
+    width: 100%;
+    height: 90px;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .grass-band {
+        height: 56px;
+    }
+}

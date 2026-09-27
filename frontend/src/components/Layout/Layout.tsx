@@ -34,7 +34,8 @@ function Layout() {
 
     return (
         <div className="app-shell">
-            <nav className="app-sidebar">
+            <a className="skip-link" href="#main">Skip to main content</a>
+            <aside className="app-sidebar">
                 <SidebarHeader />
 
                 {admin.isAuthenticated && <AdminNav />}
@@ -50,8 +51,8 @@ function Layout() {
                     onUserSignOutClick={() => setConfirmingSignOutAs('user')}
                     onGoToUserLogin={() => navigate('/login')}
                 />
-            </nav>
-            <main className="app-content">
+            </aside>
+            <main id="main" className="app-content" tabIndex={-1}>
                 <Outlet />
             </main>
 

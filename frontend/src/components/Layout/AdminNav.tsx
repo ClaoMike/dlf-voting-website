@@ -10,6 +10,7 @@ const ADMIN_NAV_ITEMS = [
 
 function AdminNav() {
     return (
+        <nav aria-label="Administration" className="sidebar-nav-wrapper">
         <ul className="sidebar-nav">
             {ADMIN_NAV_ITEMS.map((item) => (
                 <li key={item.path}>
@@ -22,6 +23,7 @@ function AdminNav() {
                 </li>
             ))}
         </ul>
+        </nav>
     )
 }
 

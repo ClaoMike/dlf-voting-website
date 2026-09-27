@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useUserAuth } from '../../context/UserAuthContext'
 import EditVoteDialog from '../../components/EditVoteDialog'
+import GrassBand from '../../components/Decor/GrassBand'
 import VotingSection from './VotingSection'
 import { useVotingData } from './useVotingData'
 
@@ -11,11 +12,21 @@ function Welcome() {
     const data = useVotingData()
     const [selectedId, setSelectedId] = useState('')
     const [showEditVote, setShowEditVote] = useState(false)
+    const [justVoted, setJustVoted] = useState(false)
+    const [selectionMissing, setSelectionMissing] = useState(false)
 
     const handleSubmit = async () => {
-        if (!selectedId) return
+        if (data.isSubmitting) return
+        if (!selectedId) {
+            setSelectionMissing(true)
+            return
+        }
+        setSelectionMissing(false)
         const success = await data.submitVote(selectedId)
-        if (success) setSelectedId('')
+        if (success) {
+            setSelectedId('')
+            setJustVoted(true)
+        }
     }
 
     const handleEditVoteSave = async (optionId: string) => {
@@ -25,23 +36,35 @@ function Welcome() {
 
     return (
         <div className="welcome-page">
-            <h1>
-                Welcome, <span className="welcome-email">{fullName ?? username}</span>!
-            </h1>
+            <header className="welcome-header">
+                <h1>
+                    Welcome, <span className="welcome-name">{fullName ?? username}</span>
+                </h1>
+            </header>
 
-            <section className="vote-section">
+            <section className="vote-section" aria-label="Ballot">
                 <VotingSection
                     isLoading={data.isLoading}
                     isVotingOpen={data.isVotingOpen}
-                    error={data.error}
+                    loadError={data.loadError}
+                    submitProblem={
+                        selectionMissing ? { message: 'Choose an option before submitting.' } : data.submitProblem
+                    }
+                    isSubmitting={data.isSubmitting}
                     myVote={data.myVote}
                     options={data.options}
                     selectedId={selectedId}
-                    onSelectedIdChange={setSelectedId}
+                    focusConfirmation={justVoted}
+                    onSelectedIdChange={(id) => {
+                        setSelectedId(id)
+                        setSelectionMissing(false)
+                    }}
                     onSubmit={handleSubmit}
                     onEditVoteClick={() => setShowEditVote(true)}
                 />
             </section>
+
+            <GrassBand />
 
             {showEditVote && data.myVote?.votingOptionId && (
                 <EditVoteDialog

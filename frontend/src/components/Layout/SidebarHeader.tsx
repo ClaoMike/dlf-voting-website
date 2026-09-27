@@ -4,7 +4,7 @@ import { VOTING_SYSTEM_WEBSITE_TITLE } from '../../constants/strings'
 function SidebarHeader() {
     return (
         <div className="sidebar-header">
-            <img src={dlfLogo} alt="DLF logo" className="sidebar-logo" />
+            <img src={dlfLogo} alt="DLF" className="sidebar-logo" />
             <span className="sidebar-title">{VOTING_SYSTEM_WEBSITE_TITLE}</span>
         </div>
     )

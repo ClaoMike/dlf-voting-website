@@ -1,60 +1,158 @@
+/* A full-height column: the card in the middle, the grass along the bottom edge of the content area. */
 .login-page {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: calc(100svh - 4rem); /* accounts for .app-content padding */
+    flex: 1;
+    margin-bottom: calc(-1 * var(--content-padding));
 }
 
-.login-title {
-    margin-bottom: 1.5rem;
+.login-card {
+    margin-top: auto;
+    width: 100%;
+    max-width: 380px;
+    box-sizing: border-box;
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--accent);
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: var(--shadow);
+}
+
+.login-eyebrow {
+    margin: 0 0 0.25rem;
+    color: var(--accent-strong);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.login-card .login-title {
+    margin: 0 0 0.5rem;
+    font-size: 2rem;
+    letter-spacing: -0.5px;
+}
+
+.login-intro {
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 320px;
     gap: 0.4rem;
 }
 
 .login-form label {
-    font-weight: 500;
-    font-size: 0.9rem;
     margin-top: 0.5rem;
+    color: var(--text-h);
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .login-form input {
+    min-height: 44px;
     padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border, #e5e4e7);
-    border-radius: 4px;
+    box-sizing: border-box;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    /* 16px or more stops iOS Safari from zooming into the field. */
     font-size: 1rem;
 }
 
 .login-form input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-bg);
+    border-color: var(--accent-strong);
+}
+
+.login-form input[aria-invalid='true'] {
+    border-color: #c0392b;
+}
+
+.login-password {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.login-password input {
+    flex: 1;
+    min-width: 0;
+}
+
+.login-password-toggle {
+    min-width: 64px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: var(--text-h);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.login-password-toggle:hover {
+    background-color: #f5f5f5;
 }
 
 .field-error {
+    min-height: 1.2em;
+    margin: 0.25rem 0 0;
     color: #c0392b;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 
-.login-form button {
-    margin-top: 1.25rem;
-    padding: 0.7rem;
+.login-form .login-submit {
+    min-height: 48px;
+    margin-top: 0.75rem;
     border: none;
-    border-radius: 4px;
-    background-color: var(--accent);
+    border-radius: 6px;
+    background-color: var(--accent-strong);
     color: white;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
 }
 
-.login-form button:disabled {
-    background-color: #d0c3d9;
-    cursor: not-allowed;
+.login-form .login-submit:hover {
+    filter: brightness(0.92);
+}
+
+.login-form .login-submit[aria-disabled='true'] {
+    cursor: progress;
+    opacity: 0.8;
+}
+
+.login-facts {
+    margin: 1.5rem 0 auto;
+    padding: 0 1rem;
+    max-width: 380px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.login-page .grass-band {
+    margin-top: 2rem;
+    /* Bleed past the content padding so the grass meets the edges. */
+    /* An <svg> won't stretch like a block, so give it the width explicitly. */
+    width: calc(100% + 2 * var(--content-padding));
+    margin-left: calc(-1 * var(--content-padding));
+    margin-right: calc(-1 * var(--content-padding));
+}
+
+@media (max-width: 768px) {
+    /* On phones the card sits near the top instead of floating in the middle. */
+    .login-card {
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .login-card .login-title {
+        font-size: 1.6rem;
+    }
 }

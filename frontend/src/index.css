@@ -3,8 +3,14 @@
     --text-h: #08060d;
     --bg: #fff;
     --border: #e5e4e7;
+    /* Form fields need 3:1 against white to be recognisable as fields (WCAG 1.4.11). */
+    --border-strong: #8a8a8a;
     --code-bg: #f4f3ec;
+    /* DLF green (dlf.com uses #00a651). White text on it is only 3.2:1, so buttons, links and focus rings use the
+       darker --accent-strong (5.5:1); the bright green is for decoration and large shapes. */
     --accent: #00a650;
+    --accent-strong: #007a3d;
+    --accent-soft: #e8f6ee;
     --accent-bg: rgba(0, 166, 80, 0.1);
     --accent-border: rgba(0, 166, 80, 0.5);
     --danger: #d9363e;
@@ -43,6 +49,34 @@
 
 body {
     margin: 0;
+}
+
+/* One visible focus style for everything that can be focused with the keyboard. */
+:focus-visible {
+    outline: 3px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+/* Hidden on screen, still read by screen readers. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
 }
 
 h1,

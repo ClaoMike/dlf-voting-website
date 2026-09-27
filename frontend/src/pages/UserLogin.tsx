@@ -7,10 +7,15 @@ function UserLogin() {
     const { login } = useUserAuth()
     const { isAuthenticated: isAdminAuthenticated, isLoading: isAdminLoading } = useAdminAuth()
 
-    if (isAdminLoading) return <div>Loading...</div>
+    if (isAdminLoading) return <p role="status">Loading…</p>
     if (isAdminAuthenticated) return <Navigate to="/admin/overview" replace />
 
-    return <LoginForm title="Sign in" login={login} redirectTo="/welcome" />
+    return <LoginForm
+            title="Sign in to vote"
+            intro="Use the username and password you were given."
+            login={login}
+            redirectTo="/welcome"
+        />
 }
 
 export default UserLogin

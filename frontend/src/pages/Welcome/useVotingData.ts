@@ -1,21 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { MyVote, VotingOption } from './types'
 
 const OPTIONS_API = 'http://localhost:5120/api/voting-options'
 const VOTES_API = 'http://localhost:5120/api/votes'
 const STATUS_API = 'http://localhost:5120/api/settings/voting'
 
+export type SubmitProblem = { message: string; sessionExpired?: boolean }
+
 export function useVotingData() {
     const [options, setOptions] = useState<VotingOption[]>([])
     const [myVote, setMyVote] = useState<MyVote | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const [loadError, setLoadError] = useState<string | null>(null)
+    const [submitProblem, setSubmitProblem] = useState<SubmitProblem | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [isVotingOpen, setIsVotingOpen] = useState<boolean | null>(null)
+
+    const loadOptions = useCallback(async () => {
+        const res = await fetch(OPTIONS_API, { credentials: 'include' })
+        if (res.ok) setOptions(await res.json())
+    }, [])
 
     useEffect(() => {
         const fetchAll = async () => {
             setIsLoading(true)
-            setError(null)
+            setLoadError(null)
             try {
                 const [statusRes, optionsRes, voteRes] = await Promise.all([
                     fetch(STATUS_API, { credentials: 'include' }),
@@ -28,12 +37,11 @@ export function useVotingData() {
                     setIsVotingOpen(statusData.isVotingOpen)
                 }
 
-                // Only bother loading options/vote data if voting is actually open —
-                // if closed, those endpoints would 403 anyway.
+                // While voting is closed these two answer 403, which the closed message already covers.
                 if (optionsRes.ok) setOptions(await optionsRes.json())
                 if (voteRes.ok) setMyVote(await voteRes.json())
             } catch {
-                setError('Could not load voting data.')
+                setLoadError('Could not load the ballot. Please check your connection and reload the page.')
             } finally {
                 setIsLoading(false)
             }
@@ -43,7 +51,8 @@ export function useVotingData() {
     }, [])
 
     const submitVote = async (optionId: string) => {
-        setError(null)
+        setSubmitProblem(null)
+        setIsSubmitting(true)
         try {
             const res = await fetch(VOTES_API, {
                 method: 'POST',
@@ -52,20 +61,29 @@ export function useVotingData() {
                 body: JSON.stringify({ votingOptionId: optionId }),
             })
 
-            if (res.status === 403) {
-                setIsVotingOpen(false)
-                return false
+            if (res.ok) {
+                setMyVote(await res.json())
+                return true
             }
 
-            if (!res.ok) setError('Could not submit your vote.')
-
-            setMyVote(await res.json())
-            return true
-        } catch {
-            setError('Could not submit your vote.')
+            if (res.status === 401) {
+                setSubmitProblem({ message: 'Your session has expired, so your vote was not saved.', sessionExpired: true })
+            } else if (res.status === 403) {
+                setIsVotingOpen(false)
+            } else if (res.status === 404) {
+                setSubmitProblem({ message: 'That option is no longer on the ballot. Please choose again.' })
+                await loadOptions()
+            } else {
+                setSubmitProblem({ message: 'Your vote could not be saved. Please try again.' })
+            }
             return false
+        } catch {
+            setSubmitProblem({ message: 'Your vote could not be saved. Please check your connection and try again.' })
+            return false
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
-    return { options, myVote, isLoading, error, isVotingOpen, submitVote }
+    return { options, myVote, isLoading, loadError, submitProblem, isSubmitting, isVotingOpen, submitVote }
 }
