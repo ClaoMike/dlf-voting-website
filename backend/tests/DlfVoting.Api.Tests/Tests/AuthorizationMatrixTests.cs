@@ -51,7 +51,6 @@ public class AuthorizationMatrixTests : IntegrationTestBase
         { "PUT", "/api/administrators/me/password" },
         { "GET", "/api/votes" },
         { "GET", "/api/votes/stats" },
-        { "PUT", $"/api/votes/{Guid.NewGuid()}" },
         { "DELETE", $"/api/votes/{Guid.NewGuid()}" },
         { "PUT", "/api/settings/voting" },
     };
@@ -206,6 +205,8 @@ public class AuthorizationMatrixTests : IntegrationTestBase
             await db.SaveChangesAsync();
             victimId = (await db.Users.SingleAsync(u => u.Username == UserUsername)).Id;
             optionId = option.Id;
+            db.Votes.Add(new Vote { Id = Guid.NewGuid(), UserId = victimId, VotingOptionId = optionId, UpdatedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync();
         }
 
         var attacker = await CreateAuthenticatedUserClientAsync(AttackerUsername, AttackerPassword);
@@ -214,7 +215,7 @@ public class AuthorizationMatrixTests : IntegrationTestBase
         {
             await attacker.PutAsJsonAsync($"/api/users/{victimId}", new { username = UserUsername, password = NewPassword }),
             await attacker.PostAsJsonAsync("/api/administrators", new { username = "backdoor", email = "backdoor@example.com", password = NewPassword }),
-            await attacker.PutAsJsonAsync($"/api/votes/{victimId}", new { votingOptionId = optionId }),
+            await attacker.DeleteAsync($"/api/votes/{victimId}"),
             await attacker.PutAsJsonAsync("/api/settings/voting", new { isVotingOpen = false }),
             await attacker.DeleteAsync("/api/voting-options"),
             await attacker.DeleteAsync("/api/users"),
@@ -228,7 +229,7 @@ public class AuthorizationMatrixTests : IntegrationTestBase
             Assert.Equal(2, await db.Users.CountAsync());
             Assert.Equal(1, await db.Administrators.CountAsync());
             Assert.Equal(1, await db.VotingOptions.CountAsync());
-            Assert.Equal(0, await db.Votes.CountAsync());
+            Assert.Equal(optionId, (await db.Votes.SingleAsync(v => v.UserId == victimId)).VotingOptionId);
             Assert.True((await db.VotingSettings.AsNoTracking().FirstOrDefaultAsync())?.IsVotingOpen ?? true);
         }
 

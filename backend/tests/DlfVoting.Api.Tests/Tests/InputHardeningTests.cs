@@ -50,7 +50,6 @@ public class InputHardeningTests : IntegrationTestBase
     [InlineData("POST", "/api/users", "{\"username\":\"valid-user\"}")]
     [InlineData("POST", "/api/administrators", "{\"username\":\"new-admin\",\"password\":\"ValidPassword1234!@#$\"}")]
     [InlineData("PUT", "/api/administrators/me/password", "{}")]
-    [InlineData("PUT", "/api/votes/00000000-0000-0000-0000-000000000000", "{\"votingOptionId\":\"not-a-guid\"}")]
     [InlineData("PUT", "/api/settings/voting", "{\"isVotingOpen\":\"maybe\"}")]
     public async Task AdminWrite_WithMissingRequiredFieldOrWrongType_ReturnsBadRequest(string method, string url, string body)
     {

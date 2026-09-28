@@ -12,7 +12,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     private record VotingOptionResponseDto(Guid Id, string Name, DateTime CreatedAt);
     // ReSharper disable once ClassNeverInstantiated.Local
     // ReSharper disable once NotAccessedPositionalProperty.Local
-    private record AdminVoteResponseDto(Guid UserId, string Username, string? FirstName, string? LastName, Guid? VotingOptionId, string? VotingOptionName, DateTime? UpdatedAt);
+    private record AdminVoteResponseDto(Guid UserId, string Username, string? FirstName, string? LastName, bool HasVoted);
     private record PagedVotesResponseDto(List<AdminVoteResponseDto> Items, int TotalCount, int Page, int PageSize);
     
     // ReSharper disable once ConvertToPrimaryConstructor
@@ -80,23 +80,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task AdminSetVote_WithoutAuth_ReturnsUnauthorized()
-    {
-        var client = Factory.CreateClient();
-        var response = await client.PutAsJsonAsync($"/api/votes/{Guid.NewGuid()}", new { votingOptionId = Guid.NewGuid() });
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminSetVote_WithUserAuth_ReturnsUnauthorized()
-    {
-        var userClient = await CreateAuthenticatedUserClientAsync();
-        var response = await userClient.PutAsJsonAsync($"/api/votes/{Guid.NewGuid()}", new { votingOptionId = Guid.NewGuid() });
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminDeleteVote_WithoutAuth_ReturnsUnauthorized()
+    public async Task AdminResetVote_WithoutAuth_ReturnsUnauthorized()
     {
         var client = Factory.CreateClient();
         var response = await client.DeleteAsync($"/api/votes/{Guid.NewGuid()}");
@@ -104,7 +88,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task AdminDeleteVote_WithUserAuth_ReturnsUnauthorized()
+    public async Task AdminResetVote_WithUserAuth_ReturnsUnauthorized()
     {
         var userClient = await CreateAuthenticatedUserClientAsync();
         var response = await userClient.DeleteAsync($"/api/votes/{Guid.NewGuid()}");
@@ -114,7 +98,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     // --- GetAllPaged: correctness ---
 
     [Fact]
-    public async Task GetAllPaged_ReturnsAllUsers_WithNullVoteInfoForNonVoters()
+    public async Task GetAllPaged_ReturnsAllUsers_WithWhetherTheyVoted()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionId = await CreateVotingOptionAsync(adminClient, "Sorted Option");
@@ -130,14 +114,8 @@ public class AdminVotesControllerTests : IntegrationTestBase
         // +1 accounts for the base seeded test user (UserUsername) from IntegrationTestBase, who never voted here.
         Assert.Equal(3, body!.TotalCount);
 
-        var voterRow = body.Items.Single(v => v.Username == "zzz-voter");
-        Assert.Equal(optionId, voterRow.VotingOptionId);
-        Assert.Equal("Sorted Option", voterRow.VotingOptionName);
-
-        var nonVoterRow = body.Items.Single(v => v.Username == "aaa-nonvoter");
-        Assert.Null(nonVoterRow.VotingOptionId);
-        Assert.Null(nonVoterRow.VotingOptionName);
-        Assert.Null(nonVoterRow.UpdatedAt);
+        Assert.True(body.Items.Single(v => v.Username == "zzz-voter").HasVoted);
+        Assert.False(body.Items.Single(v => v.Username == "aaa-nonvoter").HasVoted);
     }
 
     [Fact]
@@ -233,73 +211,13 @@ public class AdminVotesControllerTests : IntegrationTestBase
         Assert.Equal(6, body.Items.Count);
     }
 
-    // --- AdminSetVote ---
+    // --- AdminResetVote ---
 
     [Fact]
-    public async Task AdminSetVote_ForUserWithNoVote_CreatesVote()
+    public async Task AdminResetVote_ForUserWithVote_DeletesIt()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Admin Assigned");
-        var (userId, _) = await CreateAndLoginUserAsync("no-vote-yet", "SomeValidPassword1!@#");
-
-        var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var vote = await GetVoteForUserAsync(userId);
-        Assert.Equal(optionId, vote!.VotingOptionId);
-    }
-
-    [Fact]
-    public async Task AdminSetVote_ForUserWithExistingVote_UpdatesVote()
-    {
-        var adminClient = await CreateAuthenticatedClientAsync();
-        var optionA = await CreateVotingOptionAsync(adminClient, "Admin Update A");
-        var optionB = await CreateVotingOptionAsync(adminClient, "Admin Update B");
-        var (userId, userClient) = await CreateAndLoginUserAsync("existing-vote", "SomeValidPassword1!@#");
-        await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
-
-        var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionB });
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var vote = await GetVoteForUserAsync(userId);
-        Assert.Equal(optionB, vote!.VotingOptionId);
-
-        // Still exactly one row for this user, not two.
-        using var scope = Factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var count = await db.Votes.CountAsync(v => v.UserId == userId);
-        Assert.Equal(1, count);
-    }
-
-    [Fact]
-    public async Task AdminSetVote_ForNonexistentUser_ReturnsNotFound()
-    {
-        var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Some Option");
-
-        var response = await adminClient.PutAsJsonAsync($"/api/votes/{Guid.NewGuid()}", new { votingOptionId = optionId });
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task AdminSetVote_ForNonexistentOption_ReturnsNotFound()
-    {
-        var adminClient = await CreateAuthenticatedClientAsync();
-        var (userId, _) = await CreateAndLoginUserAsync("bad-option-target", "SomeValidPassword1!@#");
-
-        var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = Guid.NewGuid() });
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    // --- AdminDeleteVote ---
-
-    [Fact]
-    public async Task AdminDeleteVote_ForUserWithVote_RemovesIt()
-    {
-        var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "To Be Removed By Admin");
+        var optionId = await CreateVotingOptionAsync(adminClient, "To Be Reset By Admin");
         var (userId, userClient) = await CreateAndLoginUserAsync("delete-target", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
@@ -310,7 +228,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task AdminDeleteVote_ForUserWhoNeverVoted_ReturnsNotFound()
+    public async Task AdminResetVote_ForUserWhoNeverVoted_ReturnsNotFound()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var (userId, _) = await CreateAndLoginUserAsync("never-voted", "SomeValidPassword1!@#");
@@ -321,11 +239,11 @@ public class AdminVotesControllerTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task AdminDeleteVote_AlreadyDeleted_ReturnsNotFound()
+    public async Task AdminResetVote_AlreadyReset_ReturnsNotFound()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Double Delete By Admin");
-        var (userId, userClient) = await CreateAndLoginUserAsync("admin-double-delete", "SomeValidPassword1!@#");
+        var optionId = await CreateVotingOptionAsync(adminClient, "Double Reset By Admin");
+        var (userId, userClient) = await CreateAndLoginUserAsync("admin-double-reset", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         await adminClient.DeleteAsync($"/api/votes/{userId}");
 
@@ -337,7 +255,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
     // --- Concurrency: admin acting alongside the user themselves ---
 
     [Fact]
-    public async Task ConcurrentAdminAndUserEdit_SameVote_ResultsInExactlyOneVoteRow()
+    public async Task ConcurrentUserChangeAndAdminReset_SameVote_NeverLeavesInconsistentState()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
         var optionA = await CreateVotingOptionAsync(adminClient, "Contested Admin A");
@@ -345,50 +263,28 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var (userId, userClient) = await CreateAndLoginUserAsync("contested-by-both", "SomeValidPassword1!@#");
         await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
 
-        // The user changes their own vote to B while the admin simultaneously sets it to A again.
+        // The user changes their own vote to B while the admin simultaneously resets it.
         var userTask = userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
-        var adminTask = adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionA });
-        var responses = await Task.WhenAll(userTask, adminTask);
+        var adminTask = adminClient.DeleteAsync($"/api/votes/{userId}");
+        var userResponse = await userTask;
+        var adminResponse = await adminTask;
 
-        Assert.All(responses, r =>
-            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
+        Assert.Equal(HttpStatusCode.OK, userResponse.StatusCode);
+        Assert.True(adminResponse.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound);
 
+        // Either the reset came last (no vote) or the user's change did (their new vote, B). Never two rows.
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var count = await db.Votes.CountAsync(v => v.UserId == userId);
-        Assert.Equal(1, count);
+        var votes = await db.Votes.Where(v => v.UserId == userId).ToListAsync();
+        Assert.True(votes.Count is 0 or 1);
+        Assert.All(votes, v => Assert.Equal(optionB, v.VotingOptionId));
     }
 
     [Fact]
-    public async Task ConcurrentAdminEditAndDelete_SameVote_NeverLeavesInconsistentState()
+    public async Task ConcurrentAdminResetVotes_DifferentUsers_AllSucceedIndependently()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Edit Delete Race");
-        var (userId, userClient) = await CreateAndLoginUserAsync("edit-delete-race", "SomeValidPassword1!@#");
-        await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
-
-        var editTask = adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
-        var deleteTask = adminClient.DeleteAsync($"/api/votes/{userId}");
-        var editResponse = await editTask;
-        var deleteResponse = await deleteTask;
-
-        Assert.True(
-            editResponse.StatusCode is HttpStatusCode.OK or HttpStatusCode.NotFound or HttpStatusCode.Conflict);
-        Assert.True(
-            deleteResponse.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound);
-
-        // Whatever order the race resolved in, there must be at most one row and no crash.
-        using var scope = Factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var count = await db.Votes.CountAsync(v => v.UserId == userId);
-        Assert.True(count is 0 or 1);
-    }
-
-    [Fact]
-    public async Task ConcurrentAdminDeleteVotes_DifferentUsers_AllSucceedIndependently()
-    {
-        var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Bulk Admin Delete Target");
+        var optionId = await CreateVotingOptionAsync(adminClient, "Bulk Admin Reset Target");
 
         var (user1Id, client1) = await CreateAndLoginUserAsync("bulk-admin-del-1", "SomeValidPassword1!@#");
         var (user2Id, client2) = await CreateAndLoginUserAsync("bulk-admin-del-2", "SomeValidPassword2!@#");
@@ -405,13 +301,12 @@ public class AdminVotesControllerTests : IntegrationTestBase
     }
     
     [Fact]
-    public async Task ConcurrentTwoAdminsEditingSameVote_ResultsInExactlyOneVoteRow()
+    public async Task ConcurrentTwoAdminsResettingSameVote_ExactlyOneSucceeds()
     {
         var adminClient1 = await CreateAuthenticatedClientAsync();
-        var optionA = await CreateVotingOptionAsync(adminClient1, "Two Admins A");
-        var optionB = await CreateVotingOptionAsync(adminClient1, "Two Admins B");
+        var optionId = await CreateVotingOptionAsync(adminClient1, "Two Admins Option");
         var (userId, userClient) = await CreateAndLoginUserAsync("two-admins-target", "SomeValidPassword1!@#");
-        await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
+        await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
 
         const string secondAdminEmail = "second-admin-vote-test@example.com";
         const string secondAdminPassword = "AnotherStrongPassword1!@#";
@@ -440,21 +335,14 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var adminClient2 = Factory.CreateClient();
         adminClient2.DefaultRequestHeaders.Add("Cookie", cookie);
 
-        // Two different admins simultaneously set the same user's vote to two different options.
-        var task1 = adminClient1.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionA });
-        var task2 = adminClient2.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionB });
+        // Two different admins simultaneously reset the same user's vote: one deletes it, the other finds it gone.
+        var task1 = adminClient1.DeleteAsync($"/api/votes/{userId}");
+        var task2 = adminClient2.DeleteAsync($"/api/votes/{userId}");
         var responses = await Task.WhenAll(task1, task2);
 
-        Assert.All(responses, r =>
-            Assert.True(r.StatusCode is HttpStatusCode.OK or HttpStatusCode.Conflict));
-
-        using var verifyScope = Factory.Services.CreateScope();
-        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
-        var count = await verifyDb.Votes.CountAsync(v => v.UserId == userId);
-        Assert.Equal(1, count);
-
-        var finalVote = await verifyDb.Votes.FirstAsync(v => v.UserId == userId);
-        Assert.True(finalVote.VotingOptionId == optionA || finalVote.VotingOptionId == optionB);
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.NoContent);
+        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.NotFound);
+        Assert.Null(await GetVoteForUserAsync(userId));
     }
     
     [Fact]
@@ -472,7 +360,7 @@ public class AdminVotesControllerTests : IntegrationTestBase
         var body = await response.Content.ReadFromJsonAsync<PagedVotesResponseDto>();
 
         Assert.Equal(1, body!.TotalCount);
-        Assert.Single(body.Items, v => v.Username == "filter-voter");
+        Assert.Single(body.Items, v => v.Username == "filter-voter" && v.HasVoted);
         Assert.DoesNotContain(body.Items, v => v.Username == "filter-nonvoter");
     }
 

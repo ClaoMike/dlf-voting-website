@@ -158,7 +158,7 @@ public class VotingSettingsTests : IntegrationTestBase
     [Fact]
     public async Task GetMyVote_WhenVotingClosed_StillWorksForAdminSession()
     {
-        // AdminSetVote/AdminDeleteVote/GetAllPaged are separate admin-only actions and
+        // AdminResetVote/GetAllPaged are separate admin-only actions and
         // aren't decorated with [RequireVotingOpen] at all, so they should be entirely
         // unaffected by the toggle regardless of session type.
         await SetVotingOpenAsync(false);
@@ -170,16 +170,17 @@ public class VotingSettingsTests : IntegrationTestBase
     }
 
     [Fact]
-    public async Task AdminSetVote_WhenVotingClosed_StillSucceeds()
+    public async Task AdminResetVote_WhenVotingClosed_StillSucceeds()
     {
         var adminClient = await CreateAuthenticatedClientAsync();
-        var optionId = await CreateVotingOptionAsync(adminClient, "Admin Override Option");
-        var (userId, _) = await CreateAndLoginUserAsync("override-target", "SomeValidPassword1!@#");
+        var optionId = await CreateVotingOptionAsync(adminClient, "Reset While Closed Option");
+        var (userId, userClient) = await CreateAndLoginUserAsync("reset-target", "SomeValidPassword1!@#");
+        await userClient.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
         await SetVotingOpenAsync(false);
 
-        var response = await adminClient.PutAsJsonAsync($"/api/votes/{userId}", new { votingOptionId = optionId });
+        var response = await adminClient.DeleteAsync($"/api/votes/{userId}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     private async Task<(Guid userId, HttpClient client)> CreateAndLoginUserAsync(string username, string password)
