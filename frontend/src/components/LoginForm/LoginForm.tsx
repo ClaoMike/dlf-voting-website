@@ -105,10 +105,6 @@ function LoginForm({ title, intro, notice, login, redirectTo }: LoginFormProps) 
                     </button>
                 </form>
             </div>
-
-            <p className="login-facts">
-                Owned by Danish farmers since 1906 · Grass and clover seed for more than 100 countries
-            </p>
         </div>
     )
 }

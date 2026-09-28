@@ -1,7 +1,0 @@
-.grass-band {
-    display: block;
-    width: 100%;
-    /* Grow with the width (the aspect ratio is set on the element), so the blade tips are never cut off. */
-    height: auto;
-    pointer-events: none;
-}

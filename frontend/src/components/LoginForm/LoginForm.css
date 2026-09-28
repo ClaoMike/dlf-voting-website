@@ -7,7 +7,7 @@
 }
 
 .login-card {
-    margin-top: auto;
+    margin-block: auto;
     width: 100%;
     max-width: 380px;
     box-sizing: border-box;
@@ -120,14 +120,6 @@
 .login-form .login-submit[aria-disabled='true'] {
     cursor: progress;
     opacity: 0.8;
-}
-
-.login-facts {
-    margin: 1.5rem 0 auto;
-    padding: 0 1rem;
-    max-width: 380px;
-    font-size: 0.8rem;
-    text-align: center;
 }
 
 @media (max-width: 768px) {
