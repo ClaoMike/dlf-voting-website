@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUserAuth } from '../../context/UserAuthContext'
+import { useUserAuth } from '../../context/useUserAuth'
 import EditVoteDialog from '../../components/EditVoteDialog'
 import VotingSection from './VotingSection'
 import { useVotingData } from './useVotingData'

@@ -1,5 +1,5 @@
 import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
-import { useAdminAuth } from '../../../context/AdminAuthContext'
+import { useAdminAuth } from '../../../context/useAdminAuth'
 import { useVotingStatus } from './useVotingStatus'
 import { useChangePassword } from './useChangePassword'
 import VotingToggleSection from './VotingToggleSection'

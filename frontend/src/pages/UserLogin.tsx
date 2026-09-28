@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import LoginForm from '../components/LoginForm/LoginForm'
-import { useAdminAuth } from '../context/AdminAuthContext'
-import { useUserAuth } from '../context/UserAuthContext'
+import { useAdminAuth } from '../context/useAdminAuth'
+import { useUserAuth } from '../context/useUserAuth'
 
 function UserLogin() {
     const { login, sessionExpired } = useUserAuth()

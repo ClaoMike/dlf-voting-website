@@ -4,6 +4,33 @@ import type { PagedVotes, Tab, VoteRow, VotingOption, VoteStats } from './types'
 const STATS_API = '/api/votes/stats'
 const VOTES_API = '/api/votes'
 const OPTIONS_API = '/api/voting-options'
+const VOTES_ERROR = 'Could not load votes.'
+
+type VotesResult = { data: PagedVotes } | { error: string }
+
+// These only talk to the server; the hook puts the results into state.
+async function requestVotes(targetPage: number, targetTab: Tab): Promise<VotesResult> {
+    try {
+        const onlyVoted = targetTab === 'voted'
+        const res = await fetch(`${VOTES_API}?page=${targetPage}&onlyVoted=${onlyVoted}`, {
+            credentials: 'include',
+        })
+        if (!res.ok) return { error: VOTES_ERROR }
+        return { data: await res.json() }
+    } catch {
+        return { error: VOTES_ERROR }
+    }
+}
+
+// Options are only needed for the edit dialog, and stats are supplementary: a failure leaves them out (null).
+async function requestOptional<T>(url: string): Promise<T | null> {
+    try {
+        const res = await fetch(url, { credentials: 'include' })
+        return res.ok ? await res.json() : null
+    } catch {
+        return null
+    }
+}
 
 export function useVotesData() {
     const [tab, setTab] = useState<Tab>('all')
@@ -18,62 +45,56 @@ export function useVotesData() {
 
     const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1)
 
+    const showVotes = (result: VotesResult) => {
+        if ('error' in result) {
+            setError(result.error)
+        } else {
+            setVotes(result.data.items)
+            setTotalCount(result.data.totalCount)
+            setPageSize(result.data.pageSize)
+            setPage(result.data.page)
+        }
+        setIsLoading(false)
+    }
+
+    const showStats = (result: VoteStats | null) => {
+        if (result) setStats(result)
+    }
+
     const fetchVotes = async (targetPage: number, targetTab: Tab) => {
         setIsLoading(true)
         setError(null)
-        try {
-            const onlyVoted = targetTab === 'voted'
-            const res = await fetch(`${VOTES_API}?page=${targetPage}&onlyVoted=${onlyVoted}`, {
-                credentials: 'include',
-            })
-            if (!res.ok) {
-                setError('Could not load votes.')
-                return
-            }
-            const data: PagedVotes = await res.json()
-            setVotes(data.items)
-            setTotalCount(data.totalCount)
-            setPageSize(data.pageSize)
-            setPage(data.page)
-        } catch {
-            setError('Could not load votes.')
-        } finally {
-            setIsLoading(false)
-        }
+        showVotes(await requestVotes(targetPage, targetTab))
     }
 
-    const fetchOptions = async () => {
-        try {
-            const res = await fetch(OPTIONS_API, { credentials: 'include' })
-            if (res.ok) setOptions(await res.json())
-        } catch {
-            // options are only needed for the edit dialog
-        }
-    }
-
-    const fetchStats = async () => {
-        try {
-            const res = await fetch(STATS_API, { credentials: 'include' })
-            if (res.ok) setStats(await res.json())
-        } catch {
-            // stats are supplementary; a failure here doesn't block the table
-        }
-    }
-
+    // First page of the tab, on mount and when the tab changes. Answers for a tab that is no longer shown are
+    // ignored, so a slow one can't overwrite the current tab.
     useEffect(() => {
-        void fetchVotes(1, tab)
-        void fetchOptions()
-        void fetchStats()
+        let ignore = false
+        void requestVotes(1, tab).then((result) => {
+            if (!ignore) showVotes(result)
+        })
+        void requestOptional<VotingOption[]>(OPTIONS_API).then((result) => {
+            if (!ignore && result) setOptions(result)
+        })
+        void requestOptional<VoteStats>(STATS_API).then((result) => {
+            if (!ignore) showStats(result)
+        })
+        return () => {
+            ignore = true
+        }
     }, [tab])
 
     const changeTab = (newTab: Tab) => {
         if (newTab === tab) return
+        setIsLoading(true)
+        setError(null)
         setTab(newTab)
     }
 
     const refresh = async () => {
         await fetchVotes(page, tab)
-        await fetchStats()
+        showStats(await requestOptional<VoteStats>(STATS_API))
     }
 
     return {

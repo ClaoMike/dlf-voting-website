@@ -1,28 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useSessionTimeout } from '../hooks/useSessionTimeout'
-
-type LoginResult = { success: boolean; error?: string }
+import { UserAuthContext, type LoginResult } from './useUserAuth'
 
 function toFullName(body: { firstName?: string | null; lastName?: string | null }) {
     return [body.firstName, body.lastName].filter(Boolean).join(' ') || null
 }
-
-type UserAuthContextType = {
-    isAuthenticated: boolean
-    isLoading: boolean
-    // True when the session ended because of inactivity (the login page says so).
-    sessionExpired: boolean
-    // Seconds until the session ends, while the "Are you still there?" warning should show; null otherwise.
-    sessionWarningSecondsLeft: number | null
-    staySignedIn: () => Promise<void>
-    username: string | null
-    // "First Last" from the employee import; null when the user has no name on record.
-    fullName: string | null
-    login: (username: string, password: string) => Promise<LoginResult>
-    logout: () => Promise<void>
-}
-
-const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined)
 
 export function UserAuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -43,30 +25,27 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
         onExpired: handleExpired,
     })
 
-    const checkSession = async () => {
-        try {
+    // Once, on page load. Only uses state setters and markRenewed, which never change.
+    useEffect(() => {
+        const checkSession = async () => {
             const res = await fetch('/api/auth/user/me', {
                 credentials: 'include',
             })
-            if (res.ok) {
-                const body = await res.json()
+            return res.ok ? await res.json() : null
+        }
+        checkSession()
+            .then((body) => {
+                if (!body) {
+                    setIsAuthenticated(false)
+                    return
+                }
                 setUsername(body.username)
                 setFullName(toFullName(body))
                 setIsAuthenticated(true)
                 session.markRenewed()
-            } else {
-                setIsAuthenticated(false)
-            }
-        } catch {
-            setIsAuthenticated(false)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    // Once, on page load. checkSession only uses state setters and markRenewed, which never change.
-    useEffect(() => {
-        void checkSession()
+            })
+            .catch(() => setIsAuthenticated(false))
+            .finally(() => setIsLoading(false))
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -110,10 +89,4 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
             {children}
         </UserAuthContext.Provider>
     )
-}
-
-export function useUserAuth() {
-    const ctx = useContext(UserAuthContext)
-    if (!ctx) throw new Error('useUserAuth must be used within UserAuthProvider')
-    return ctx
 }

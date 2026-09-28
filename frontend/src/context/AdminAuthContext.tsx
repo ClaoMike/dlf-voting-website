@@ -1,22 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useSessionTimeout } from '../hooks/useSessionTimeout'
-
-type LoginResult = { success: boolean; error?: string }
-
-type AdminAuthContextType = {
-    isAuthenticated: boolean
-    isLoading: boolean
-    // True when the session ended because of inactivity (the login page says so).
-    sessionExpired: boolean
-    // Seconds until the session ends, while the "Are you still there?" warning should show; null otherwise.
-    sessionWarningSecondsLeft: number | null
-    staySignedIn: () => Promise<void>
-    username: string | null
-    login: (username: string, password: string) => Promise<LoginResult>
-    logout: () => Promise<void>
-}
-
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined)
+import { AdminAuthContext, type LoginResult } from './useAdminAuth'
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -36,29 +20,26 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         onExpired: handleExpired,
     })
 
-    const checkSession = async () => {
-        try {
+    // Once, on page load. Only uses state setters and markRenewed, which never change.
+    useEffect(() => {
+        const checkSession = async () => {
             const res = await fetch('/api/auth/admin/me', {
                 credentials: 'include',
             })
-            if (res.ok) {
-                const body = await res.json()
+            return res.ok ? await res.json() : null
+        }
+        checkSession()
+            .then((body) => {
+                if (!body) {
+                    setIsAuthenticated(false)
+                    return
+                }
                 setUsername(body.username)
                 setIsAuthenticated(true)
                 session.markRenewed()
-            } else {
-                setIsAuthenticated(false)
-            }
-        } catch {
-            setIsAuthenticated(false)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    // Once, on page load. checkSession only uses state setters and markRenewed, which never change.
-    useEffect(() => {
-        void checkSession()
+            })
+            .catch(() => setIsAuthenticated(false))
+            .finally(() => setIsLoading(false))
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
@@ -100,10 +81,4 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             {children}
         </AdminAuthContext.Provider>
     )
-}
-
-export function useAdminAuth() {
-    const ctx = useContext(AdminAuthContext)
-    if (!ctx) throw new Error('useAdminAuth must be used within AdminAuthProvider')
-    return ctx
 }

@@ -7,23 +7,28 @@ export function useVotingStatus() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    const fetchStatus = async () => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            const res = await fetch(STATUS_API, { credentials: 'include' })
-            if (!res.ok) setError('Failed to load settings.')
-            const data = await res.json()
-            setIsVotingOpen(data.isVotingOpen)
-        } catch {
-            setError('Could not load settings.')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
+    // Load on mount. An answer that arrives after the page is left is ignored.
     useEffect(() => {
-        void fetchStatus()
+        let ignore = false
+        const load = async () => {
+            const res = await fetch(STATUS_API, { credentials: 'include' })
+            if (!res.ok) throw new Error('Failed to load settings.')
+            const data: { isVotingOpen: boolean } = await res.json()
+            return data.isVotingOpen
+        }
+        load()
+            .then((open) => {
+                if (!ignore) setIsVotingOpen(open)
+            })
+            .catch(() => {
+                if (!ignore) setError('Could not load settings.')
+            })
+            .finally(() => {
+                if (!ignore) setIsLoading(false)
+            })
+        return () => {
+            ignore = true
+        }
     }, [])
 
     const toggle = async () => {
@@ -37,7 +42,10 @@ export function useVotingStatus() {
                 credentials: 'include',
                 body: JSON.stringify({ isVotingOpen: newValue }),
             })
-            if (!res.ok) setError('Failed to update setting.')
+            if (!res.ok) {
+                setError('Failed to update setting.')
+                return
+            }
             const data = await res.json()
             setIsVotingOpen(data.isVotingOpen)
         } catch {
