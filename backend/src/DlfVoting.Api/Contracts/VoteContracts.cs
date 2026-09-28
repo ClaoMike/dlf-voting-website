@@ -9,14 +9,8 @@ public record MyVoteResponse(bool HasVoted, Guid? VotingOptionId, string? Voting
     public static readonly MyVoteResponse NotVoted = new(false, null, null, null);
 }
 
-public record AdminVoteResponse(
-    Guid UserId,
-    string Username,
-    string? FirstName,
-    string? LastName,
-    Guid? VotingOptionId,
-    string? VotingOptionName,
-    DateTime? UpdatedAt);
+/// <summary>A row of the admin overview: whether the user voted, never what they voted for.</summary>
+public record AdminVoteResponse(Guid UserId, string Username, string? FirstName, string? LastName, bool HasVoted);
 
 public record PagedVotesResponse(List<AdminVoteResponse> Items, int TotalCount, int Page, int PageSize);
 

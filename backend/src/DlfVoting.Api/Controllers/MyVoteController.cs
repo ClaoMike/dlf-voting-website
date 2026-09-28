@@ -30,5 +30,5 @@ public class MyVoteController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> CastVote([FromBody] CastVoteRequest request) =>
-        this.ToActionResult(await _votes.CastOrChangeAsync(CurrentUserId, request.VotingOptionId, onlyWhileVotingOpen: true));
+        this.ToActionResult(await _votes.CastOrChangeAsync(CurrentUserId, request.VotingOptionId));
 }

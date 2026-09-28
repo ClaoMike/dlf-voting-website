@@ -1,12 +1,11 @@
 using DlfVoting.Api.Common;
-using DlfVoting.Api.Contracts;
 using DlfVoting.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DlfVoting.Api.Controllers;
 
-/// <summary>The admin overview: listing everyone's votes, changing or removing a vote, and the totals.</summary>
+/// <summary>The admin overview: who has voted, resetting a user's vote, and the totals. Admins never see an individual vote.</summary>
 [ApiController]
 [Route("api/votes")]
 [Authorize(AuthenticationSchemes = AuthSchemes.Admin)]
@@ -30,18 +29,8 @@ public class AdminVotesController : ControllerBase
     public async Task<IActionResult> GetStats() =>
         Ok(await _reports.GetStatsAsync());
 
-    [HttpPut("{userId:guid}")]
-    public async Task<IActionResult> SetVote(Guid userId, [FromBody] CastVoteRequest request)
-    {
-        if (!await _votes.UserExistsAsync(userId))
-        {
-            return NotFound(new { message = "This user no longer exists." });
-        }
-
-        return this.ToActionResult(await _votes.CastOrChangeAsync(userId, request.VotingOptionId, onlyWhileVotingOpen: false));
-    }
-
+    /// <summary>Resets a user's vote (deletes it), so they can vote again while voting is open.</summary>
     [HttpDelete("{userId:guid}")]
-    public async Task<IActionResult> DeleteVote(Guid userId) =>
-        this.ToActionResult(await _votes.DeleteAsync(userId));
+    public async Task<IActionResult> ResetVote(Guid userId) =>
+        this.ToActionResult(await _votes.ResetAsync(userId));
 }

@@ -6,12 +6,14 @@ type VotesTableProps = {
     tab: Tab
     page: number
     totalPages: number
-    onEdit: (vote: VoteRow) => void
-    onDelete: (vote: VoteRow) => void
+    onReset: (vote: VoteRow) => void
     onPageChange: (newPage: number) => void
 }
 
-function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChange }: VotesTableProps) {
+// Admins only see whether someone voted, never what they voted for.
+function VotesTable({ votes, tab, page, totalPages, onReset, onPageChange }: VotesTableProps) {
+    const showVotedColumn = tab === 'all'
+
     if (votes.length === 0) {
         return <p>{tab === 'voted' ? 'No votes have been cast yet.' : 'No users found.'}</p>
     }
@@ -25,7 +27,7 @@ function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChan
                     <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Username</th>
-                        <th scope="col">Vote</th>
+                        {showVotedColumn && <th scope="col">Voted</th>}
                         <th scope="col"><span className="visually-hidden">Actions</span></th>
                     </tr>
                     </thead>
@@ -34,14 +36,11 @@ function VotesTable({ votes, tab, page, totalPages, onEdit, onDelete, onPageChan
                         <tr key={vote.userId}>
                             <td>{[vote.firstName, vote.lastName].filter(Boolean).join(' ')}</td>
                             <td>{vote.username}</td>
-                            <td>{vote.votingOptionName ?? ''}</td>
+                            {showVotedColumn && <td>{vote.hasVoted ? 'True' : 'False'}</td>}
                             <td className="voting-options-actions">
-                                <button className="voting-options-edit" onClick={() => onEdit(vote)}>
-                                    Edit<span className="visually-hidden"> vote of {vote.username}</span>
-                                </button>
-                                {vote.votingOptionId && (
-                                    <button className="voting-options-remove" onClick={() => onDelete(vote)}>
-                                        Remove<span className="visually-hidden"> vote of {vote.username}</span>
+                                {vote.hasVoted && (
+                                    <button className="voting-options-remove" onClick={() => onReset(vote)}>
+                                        Reset<span className="visually-hidden"> vote of {vote.username}</span>
                                     </button>
                                 )}
                             </td>

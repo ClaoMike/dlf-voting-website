@@ -1,5 +1,4 @@
 import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
-import EditVoteDialog from '../../../components/EditVoteDialog'
 import OverviewCharts from './OverviewCharts'
 import OverviewTabs from './OverviewTabs'
 import VotesTable from './VotesTable'
@@ -41,29 +40,19 @@ function AdminOverview() {
                         tab={data.tab}
                         page={data.page}
                         totalPages={data.totalPages}
-                        onEdit={actions.startEdit}
-                        onDelete={actions.startDelete}
+                        onReset={actions.startReset}
                         onPageChange={data.goToPage}
                     />
                 )}
             </section>
 
-            {actions.editingVote && (
-                <EditVoteDialog
-                    options={data.options}
-                    initialOptionId={actions.editingVote.votingOptionId ?? ''}
-                    onSave={actions.confirmEdit}
-                    onCancel={actions.cancelEdit}
-                />
-            )}
-
-            {actions.deletingVote && (
+            {actions.resettingVote && (
                 <ConfirmDialog
-                    title="Remove vote"
-                    message={`Are you sure you want to remove ${actions.deletingVote.username}'s vote?`}
-                    confirmLabel="Remove"
-                    onConfirm={actions.confirmDelete}
-                    onCancel={actions.cancelDelete}
+                    title="Reset vote"
+                    message={`Are you sure you want to reset ${actions.resettingVote.username}'s vote?`}
+                    confirmLabel="Reset"
+                    onConfirm={actions.confirmReset}
+                    onCancel={actions.cancelReset}
                 />
             )}
         </div>

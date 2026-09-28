@@ -7,10 +7,10 @@ using Npgsql;
 
 namespace DlfVoting.Api.Services;
 
-/// <summary>Reading, casting and removing a single user's vote (used by both the user and the admin endpoints).</summary>
+/// <summary>A user reading and casting their own vote, and an admin resetting a user's vote.</summary>
 public class VoteService
 {
-    private const string NoVoteMessage = "This user has not voted, or their vote was already removed.";
+    private const string NoVoteMessage = "This user has not voted, or their vote was already reset.";
     private const string OptionGoneMessage = "This voting option no longer exists.";
     private const string UserGoneMessage = "This user no longer exists.";
 
@@ -30,13 +30,11 @@ public class VoteService
             .FirstOrDefaultAsync()
         ?? MyVoteResponse.NotVoted;
 
-    public Task<bool> UserExistsAsync(Guid userId) => _db.Users.AnyAsync(u => u.Id == userId);
-
     /// <summary>
     /// Casts the user's vote, or changes it if they already voted (one vote row per user).
-    /// With <paramref name="onlyWhileVotingOpen"/> the vote is refused once voting has been closed.
+    /// The vote is refused once voting has been closed.
     /// </summary>
-    public async Task<OperationResult<MyVoteResponse>> CastOrChangeAsync(Guid userId, Guid votingOptionId, bool onlyWhileVotingOpen)
+    public async Task<OperationResult<MyVoteResponse>> CastOrChangeAsync(Guid userId, Guid votingOptionId)
     {
         var option = await _db.VotingOptions.AsNoTracking().FirstOrDefaultAsync(o => o.Id == votingOptionId);
         if (option is null) return OperationResult.NotFound(OptionGoneMessage);
@@ -52,8 +50,7 @@ public class VoteService
             written = await _db.Database.ExecuteSqlAsync($"""
                 INSERT INTO "Votes" ("Id", "UserId", "VotingOptionId", "UpdatedAt")
                 SELECT {Guid.NewGuid()}, {userId}, {option.Id}, {now}
-                WHERE NOT {onlyWhileVotingOpen}
-                   OR COALESCE((SELECT "IsVotingOpen" FROM "VotingSettings" LIMIT 1 FOR SHARE), TRUE)
+                WHERE COALESCE((SELECT "IsVotingOpen" FROM "VotingSettings" LIMIT 1 FOR SHARE), TRUE)
                 ON CONFLICT ("UserId") DO UPDATE
                 SET "VotingOptionId" = EXCLUDED."VotingOptionId", "UpdatedAt" = EXCLUDED."UpdatedAt"
                 """);
@@ -69,7 +66,8 @@ public class VoteService
             : OperationResult<MyVoteResponse>.Success(new MyVoteResponse(true, option.Id, option.Name, now));
     }
 
-    public async Task<OperationResult> DeleteAsync(Guid userId)
+    /// <summary>Deletes the user's vote, so they can vote again while voting is open.</summary>
+    public async Task<OperationResult> ResetAsync(Guid userId)
     {
         var vote = await _db.Votes.FirstOrDefaultAsync(v => v.UserId == userId);
         if (vote is null) return OperationResult.NotFound(NoVoteMessage);

@@ -98,4 +98,3 @@ Sessions work across instances (the cookie keys are in the database).
 
 - The old default admin password was in `AdminSeeder.cs` (now removed) and is still in the git history: make sure
   it isn't used for anything.
-- Administrators can see who voted for what. If the election is meant to be secret, that needs a decision first.

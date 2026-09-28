@@ -3,9 +3,7 @@ export type VoteRow = {
     username: string
     firstName: string | null
     lastName: string | null
-    votingOptionId: string | null
-    votingOptionName: string | null
-    updatedAt: string | null
+    hasVoted: boolean
 }
 
 export type PagedVotes = {
@@ -13,11 +11,6 @@ export type PagedVotes = {
     totalCount: number
     page: number
     pageSize: number
-}
-
-export type VotingOption = {
-    id: string
-    name: string
 }
 
 export type OptionVoteCount = {

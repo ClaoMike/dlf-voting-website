@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { PagedVotes, Tab, VoteRow, VotingOption, VoteStats } from './types'
+import type { PagedVotes, Tab, VoteRow, VoteStats } from './types'
 
 const STATS_API = '/api/votes/stats'
 const VOTES_API = '/api/votes'
-const OPTIONS_API = '/api/voting-options'
 const VOTES_ERROR = 'Could not load votes.'
 
 type VotesResult = { data: PagedVotes } | { error: string }
@@ -22,10 +21,10 @@ async function requestVotes(targetPage: number, targetTab: Tab): Promise<VotesRe
     }
 }
 
-// Options are only needed for the edit dialog, and stats are supplementary: a failure leaves them out (null).
-async function requestOptional<T>(url: string): Promise<T | null> {
+// Stats are supplementary: a failure leaves them out (null).
+async function requestStats(): Promise<VoteStats | null> {
     try {
-        const res = await fetch(url, { credentials: 'include' })
+        const res = await fetch(STATS_API, { credentials: 'include' })
         return res.ok ? await res.json() : null
     } catch {
         return null
@@ -35,7 +34,6 @@ async function requestOptional<T>(url: string): Promise<T | null> {
 export function useVotesData() {
     const [tab, setTab] = useState<Tab>('all')
     const [votes, setVotes] = useState<VoteRow[]>([])
-    const [options, setOptions] = useState<VotingOption[]>([])
     const [page, setPage] = useState(1)
     const [totalCount, setTotalCount] = useState(0)
     const [pageSize, setPageSize] = useState(25)
@@ -74,10 +72,7 @@ export function useVotesData() {
         void requestVotes(1, tab).then((result) => {
             if (!ignore) showVotes(result)
         })
-        void requestOptional<VotingOption[]>(OPTIONS_API).then((result) => {
-            if (!ignore && result) setOptions(result)
-        })
-        void requestOptional<VoteStats>(STATS_API).then((result) => {
+        void requestStats().then((result) => {
             if (!ignore) showStats(result)
         })
         return () => {
@@ -94,13 +89,12 @@ export function useVotesData() {
 
     const refresh = async () => {
         await fetchVotes(page, tab)
-        showStats(await requestOptional<VoteStats>(STATS_API))
+        showStats(await requestStats())
     }
 
     return {
         tab,
         votes,
-        options,
         page,
         totalPages,
         isLoading,

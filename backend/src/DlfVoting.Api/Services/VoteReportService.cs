@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DlfVoting.Api.Services;
 
-/// <summary>The admin overview: who voted for what, and the totals per option.</summary>
+/// <summary>The admin overview: who voted (but not for what), and the totals per option.</summary>
 public class VoteReportService
 {
     public const int PageSize = 25;
@@ -19,7 +19,7 @@ public class VoteReportService
         _db = db;
     }
 
-    /// <summary>A page of users sorted by name, each with their vote (if any).</summary>
+    /// <summary>A page of users sorted by name, each with whether they voted (not what they voted for).</summary>
     public async Task<PagedVotesResponse> GetPageAsync(int page, bool onlyVoted)
     {
         page = Paging.ClampPage(page, PageSize);
@@ -30,26 +30,12 @@ public class VoteReportService
 
         var totalCount = await users.CountAsync();
 
-        var pageUsers = await users
+        var items = await users
             .OrderByName()
             .Skip((page - 1) * PageSize)
             .Take(PageSize)
-            .Select(u => new { u.Id, u.Username, u.FirstName, u.LastName })
+            .Select(u => new AdminVoteResponse(u.Id, u.Username, u.FirstName, u.LastName, _db.Votes.Any(v => v.UserId == u.Id)))
             .ToListAsync();
-
-        var userIds = pageUsers.Select(u => u.Id).ToList();
-        var votes = await (
-            from v in _db.Votes
-            where userIds.Contains(v.UserId)
-            join o in _db.VotingOptions on v.VotingOptionId equals o.Id
-            select new { v.UserId, OptionId = o.Id, OptionName = o.Name, v.UpdatedAt }
-        ).ToDictionaryAsync(v => v.UserId);
-
-        var items = pageUsers
-            .Select(u => votes.TryGetValue(u.Id, out var vote)
-                ? new AdminVoteResponse(u.Id, u.Username, u.FirstName, u.LastName, vote.OptionId, vote.OptionName, vote.UpdatedAt)
-                : new AdminVoteResponse(u.Id, u.Username, u.FirstName, u.LastName, null, null, null))
-            .ToList();
 
         return new PagedVotesResponse(items, totalCount, page, PageSize);
     }

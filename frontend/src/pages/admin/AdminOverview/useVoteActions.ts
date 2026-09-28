@@ -4,61 +4,34 @@ import type { VoteRow } from './types'
 const VOTES_API = '/api/votes'
 
 export function useVoteActions(onChanged: () => Promise<void>) {
-    const [editingVote, setEditingVote] = useState<VoteRow | null>(null)
-    const [deletingVote, setDeletingVote] = useState<VoteRow | null>(null)
+    const [resettingVote, setResettingVote] = useState<VoteRow | null>(null)
     const [error, setError] = useState<string | null>(null)
 
-    const confirmEdit = async (optionId: string) => {
-        if (!editingVote) return
+    const confirmReset = async () => {
+        if (!resettingVote) return
         setError(null)
         try {
-            const res = await fetch(`${VOTES_API}/${editingVote.userId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ votingOptionId: optionId }),
-            })
-            if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to update vote.')
-            }
-            setEditingVote(null)
-            await onChanged()
-        } catch {
-            setError('Failed to update vote.')
-            setEditingVote(null)
-        }
-    }
-
-    const confirmDelete = async () => {
-        if (!deletingVote) return
-        setError(null)
-        try {
-            const res = await fetch(`${VOTES_API}/${deletingVote.userId}`, {
+            const res = await fetch(`${VOTES_API}/${resettingVote.userId}`, {
                 method: 'DELETE',
                 credentials: 'include',
             })
             if (!res.ok && res.status !== 404) {
                 const body = await res.json().catch(() => null)
-                setError(body?.message ?? 'Failed to remove vote.')
+                setError(body?.message ?? 'Failed to reset vote.')
             }
-            setDeletingVote(null)
+            setResettingVote(null)
             await onChanged()
         } catch {
-            setError('Failed to remove vote.')
-            setDeletingVote(null)
+            setError('Failed to reset vote.')
+            setResettingVote(null)
         }
     }
 
     return {
-        editingVote,
-        deletingVote,
+        resettingVote,
         error,
-        startEdit: setEditingVote,
-        startDelete: setDeletingVote,
-        cancelEdit: () => setEditingVote(null),
-        cancelDelete: () => setDeletingVote(null),
-        confirmEdit,
-        confirmDelete,
+        startReset: setResettingVote,
+        cancelReset: () => setResettingVote(null),
+        confirmReset,
     }
 }
