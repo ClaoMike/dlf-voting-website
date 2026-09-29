@@ -25,3 +25,6 @@ appsettings.Development.json
 # IDE
 .idea/
 .vscode/
+
+# Python
+__pycache__/

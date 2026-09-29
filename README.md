@@ -33,6 +33,9 @@ those calls on to the backend (`API_PROXY_TARGET=http://localhost:<port>` if the
 
 Both need to be running simultaneously for the app to work end-to-end.
 
+`python3 scripts/launcher.py` opens a small window with **Start website** and **Run tests** buttons; each opens the
+commands above (or the backend and frontend tests) in new terminal windows.
+
 ## Deploying to production
 
 The site runs on Azure as one Web App (website and API together) with an Azure PostgreSQL database.
