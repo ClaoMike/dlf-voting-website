@@ -2,7 +2,7 @@ import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import CreateUserDialog from '../../../components/CreateUserDialog'
 import EditUserDialog from '../../../components/EditUserDialog'
 import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
-import { USER_USERNAME_MAX_LENGTH } from '../../../utils/validation'
+import { USER_PASSWORD_POLICY, USER_USERNAME_MAX_LENGTH } from '../../../utils/validation'
 import ImportUsersDialog from './ImportUsersDialog'
 import UserDetailsDialog from './UserDetailsDialog'
 import UsersActionsRow from './UsersActionsRow'
@@ -103,6 +103,7 @@ function AdminUsers() {
                     error={actions.createError}
                     usernameMaxLength={USER_USERNAME_MAX_LENGTH}
                     emailField="hidden"
+                    passwordPolicy={USER_PASSWORD_POLICY}
                 />
             )}
 
@@ -112,6 +113,7 @@ function AdminUsers() {
                     initialEmail={actions.editingUser.email}
                     usernameMaxLength={USER_USERNAME_MAX_LENGTH}
                     emailField="hidden"
+                    passwordPolicy={USER_PASSWORD_POLICY}
                     onSave={actions.saveEdit}
                     onCancel={actions.cancelEdit}
                     error={actions.editError}

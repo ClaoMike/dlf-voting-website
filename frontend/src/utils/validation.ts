@@ -3,6 +3,29 @@ export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // Mirrors the backend: 20-64 chars, at least one uppercase, one digit, one special char.
 export const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{20,64}$/
 
+// Mirrors the backend: voters only need 8-64 chars, with the same character requirements.
+export const USER_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/
+
+export type PasswordPolicy = {
+    isValid: (password: string) => boolean
+    hint: string
+    // Length of passwords from the "Generate secure password" button.
+    generatedLength: number
+}
+
+export const ADMIN_PASSWORD_POLICY: PasswordPolicy = {
+    isValid: isValidPassword,
+    hint: '20-64 characters, with at least one uppercase letter, one digit and one special character.',
+    generatedLength: 24,
+}
+
+// generatedLength mirrors SecurePasswordGenerator.UserPasswordLength in the backend.
+export const USER_PASSWORD_POLICY: PasswordPolicy = {
+    isValid: (password) => USER_PASSWORD_REGEX.test(password),
+    hint: '8-64 characters, with at least one uppercase letter, one digit and one special character.',
+    generatedLength: 8,
+}
+
 // Mirrors the backend: no whitespace or control characters; anything else (including @ and æ/ø/å) is allowed.
 const USERNAME_CHARS_REGEX = /^[^\s\p{C}]*$/u
 

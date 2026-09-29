@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using ClosedXML.Excel;
+using DlfVoting.Api.Validation;
 using DlfVoting.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -162,15 +163,36 @@ public class UsersControllerTests : IntegrationTestBase
     }
 
     [Theory]
-    [InlineData("Short1!")]                     // too short
-    [InlineData("nouppercasehere1234567!@#")]    // no uppercase
-    [InlineData("NoDigitsHereAtAllForSure!@#")]  // no digit
-    [InlineData("NoSpecialCharacters12345678")]  // no special char
+    [InlineData("Short1!")]                     // too short (7 characters)
+    [InlineData("nouppercase1!")]                // no uppercase
+    [InlineData("NoDigits!")]                    // no digit
+    [InlineData("NoSpecial1")]                   // no special char
+    [InlineData("TooLong1!TooLong1!TooLong1!TooLong1!TooLong1!TooLong1!TooLong1!xy")] // 65 characters
     public async Task Create_WithInvalidPassword_ReturnsBadRequest(string password)
     {
         var client = await CreateAuthenticatedClientAsync();
         var response = await client.PostAsJsonAsync("/api/users", new { username = "valid-name", password });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(IdentityRules.InvalidUserPasswordMessage, await ReadMessageAsync(response));
+    }
+
+    [Fact]
+    public async Task Create_WithEightCharacterPassword_Succeeds()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        await CreateUserAsync(client, "eight-chars", password: "Eight1!x");
+
+        Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync("eight-chars", "Eight1!x"));
+    }
+
+    [Fact]
+    public async Task Create_WithGeneratedPassword_Succeeds()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var password = SecurePasswordGenerator.Generate();
+        await CreateUserAsync(client, "generated-pw", password: password);
+
+        Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync("generated-pw", password));
     }
 
     [Fact]
@@ -402,6 +424,17 @@ public class UsersControllerTests : IntegrationTestBase
 
         var response = await client.PutAsJsonAsync($"/api/users/{id}", new { username = "bad-pass-test", password = "tooshort" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Update_ToEightCharacterPassword_Succeeds()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var id = await CreateUserAsync(client, "eight-update");
+
+        var response = await client.PutAsJsonAsync($"/api/users/{id}", new { username = "eight-update", password = "Eight1!x" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync("eight-update", "Eight1!x"));
     }
 
     [Fact]
@@ -720,9 +753,33 @@ public class UsersControllerTests : IntegrationTestBase
         foreach (var created in body.Created)
         {
             Assert.InRange(created.Username.Length, 5, 20);
-            Assert.True(created.Password.Length >= 20);
+            Assert.Equal(SecurePasswordGenerator.UserPasswordLength, created.Password.Length);
+            Assert.True(IdentityRules.IsValidUserPassword(created.Password));
             // The generated credentials must actually work for login.
             Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(created.Username, created.Password));
+        }
+    }
+
+    [Fact]
+    public async Task BulkImport_GeneratesEightCharacterPasswords_InResponseAndWorkbook()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        var emails = Enumerable.Range(1, 20).Select(i => $"eight{i}@example.com").ToArray();
+        var content = BuildXlsxFileContent(["email", .. emails]);
+
+        var response = await RunImportAsync(client, "/api/users/bulk-import", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<BulkImportResponseDto>();
+
+        Assert.Equal(20, body!.Created.Count);
+        Assert.All(body.Created, created => Assert.Equal(8, created.Password.Length));
+
+        // The downloaded workbook is what admins hand out, so it must carry the same 8-character passwords.
+        using var workbook = OpenResultWorkbook(body.File!);
+        var sheet = workbook.Worksheet("Created users");
+        for (var row = 2; row <= 21; row++)
+        {
+            Assert.Equal(8, sheet.Cell(row, 3).GetString().Length);
         }
     }
 
@@ -1017,10 +1074,33 @@ public class UsersControllerTests : IntegrationTestBase
             var username = sheet.Cell(row, 7).GetString();
             var password = sheet.Cell(row, 8).GetString();
             Assert.InRange(username.Length, 5, 20);
+            Assert.Equal(SecurePasswordGenerator.UserPasswordLength, password.Length);
             Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(username, password));
             usernames.Add(username);
         }
         Assert.NotEqual(usernames[0], usernames[1]);
+    }
+
+    [Fact]
+    public async Task ImportEmployees_GeneratesEightCharacterPasswords()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        object?[][] rows = [EmployeeHeader, .. Enumerable.Range(1, 20).Select(i => new object?[] { $"E8{i:000}", "Anna", $"Test{i}", "DLF01", null, "Valgbar" })];
+        var content = BuildXlsxFileContent(rows);
+
+        var response = await RunImportAsync(client, "/api/users/import-employees", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<EmployeeImportResponseDto>();
+        Assert.Equal(20, body!.CreatedCount);
+
+        using var workbook = OpenResultWorkbook(body.File);
+        var sheet = workbook.Worksheet(1);
+        for (var row = 2; row <= 21; row++)
+        {
+            var password = sheet.Cell(row, 8).GetString();
+            Assert.Equal(8, password.Length);
+            Assert.True(IdentityRules.IsValidUserPassword(password), $"Row {row}: '{password}' does not meet the user password rule.");
+        }
     }
 
     [Fact]

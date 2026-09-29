@@ -103,6 +103,7 @@ public class AdministratorsControllerTests : IntegrationTestBase
 
     [Theory]
     [InlineData("Short1!")]
+    [InlineData("Eight1!x")]                     // enough for a user, too short for an administrator
     [InlineData("nouppercasehere1234567!@#")]
     [InlineData("NoDigitsHereAtAllForSure!@#")]
     [InlineData("NoSpecialCharacters12345678")]

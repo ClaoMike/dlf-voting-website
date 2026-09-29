@@ -8,9 +8,10 @@ type PasswordFieldProps = {
     onChange: (value: string) => void
     label?: string
     hint?: string
+    generatedLength?: number
 }
 
-function PasswordField({ value, onChange, label = 'Password', hint }: PasswordFieldProps) {
+function PasswordField({ value, onChange, label = 'Password', hint, generatedLength }: PasswordFieldProps) {
     const [visible, setVisible] = useState(false)
     const id = useId()
     const hintId = useId()
@@ -40,7 +41,7 @@ function PasswordField({ value, onChange, label = 'Password', hint }: PasswordFi
                 <button
                     type="button"
                     className="password-field-generate"
-                    onClick={() => onChange(generateSecurePassword())}
+                    onClick={() => onChange(generateSecurePassword(generatedLength))}
                 >
                     Generate secure password
                 </button>

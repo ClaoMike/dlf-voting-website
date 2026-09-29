@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import Modal from './Modal/Modal'
 import PasswordField from './PasswordField/PasswordField'
-import { isValidEmail, isValidPassword, isValidUsername, USERNAME_MIN_LENGTH } from '../utils/validation'
+import { isValidEmail, isValidUsername, USERNAME_MIN_LENGTH, type PasswordPolicy } from '../utils/validation'
 
 import './ConfirmDialog/ConfirmDialog.css'
 
@@ -16,6 +16,7 @@ type EditUserDialogProps = {
     // 'hidden': the email is not editable and initialEmail is passed back unchanged (users).
     // 'keep-if-blank': an empty field means "keep the current email" (admins; the list doesn't carry it).
     emailField: 'hidden' | 'keep-if-blank'
+    passwordPolicy: PasswordPolicy
     title?: string
 }
 
@@ -27,6 +28,7 @@ function EditUserDialog({
                             error,
                             usernameMaxLength,
                             emailField,
+                            passwordPolicy,
                             title = 'Edit user',
                         }: EditUserDialogProps) {
     const [username, setUsername] = useState(initialUsername)
@@ -45,7 +47,7 @@ function EditUserDialog({
     const emailValid = emailField === 'hidden' || trimmedEmail.length === 0 || isValidEmail(trimmedEmail)
 
     const passwordEntered = password.length > 0
-    const passwordValid = !passwordEntered || isValidPassword(password)
+    const passwordValid = !passwordEntered || passwordPolicy.isValid(password)
 
     const emailChanged = emailField === 'keep-if-blank' && trimmedEmail.length > 0
     const changed = trimmedUsername !== initialUsername || emailChanged || passwordEntered
@@ -102,7 +104,8 @@ function EditUserDialog({
                 value={password}
                 onChange={setPassword}
                 label="New password"
-                hint="Leave blank to keep the current password. 20-64 characters, with at least one uppercase letter, one digit and one special character."
+                hint={`Leave blank to keep the current password. ${passwordPolicy.hint}`}
+                generatedLength={passwordPolicy.generatedLength}
             />
             {passwordEntered && !passwordValid && (
                 <p className="dialog-error" role="alert">This password does not meet the requirements above.</p>

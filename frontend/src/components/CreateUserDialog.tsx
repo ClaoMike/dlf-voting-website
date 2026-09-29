@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import Modal from './Modal/Modal'
 import PasswordField from './PasswordField/PasswordField'
-import { isValidEmail, isValidPassword, isValidUsername, USERNAME_MIN_LENGTH } from '../utils/validation'
+import { isValidEmail, isValidUsername, USERNAME_MIN_LENGTH, type PasswordPolicy } from '../utils/validation'
 
 import './ConfirmDialog/ConfirmDialog.css'
 
@@ -12,6 +12,7 @@ type CreateUserDialogProps = {
     usernameMaxLength: number
     // Admins must have an email; users are created without one.
     emailField: 'required' | 'hidden'
+    passwordPolicy: PasswordPolicy
     title?: string
     submitLabel?: string
 }
@@ -22,6 +23,7 @@ function CreateUserDialog({
                               error,
                               usernameMaxLength,
                               emailField,
+                              passwordPolicy,
                               title = 'New user',
                               submitLabel = 'Create user',
                           }: CreateUserDialogProps) {
@@ -37,7 +39,7 @@ function CreateUserDialog({
     const trimmedEmail = email.trim()
     const usernameValid = isValidUsername(username, usernameMaxLength)
     const emailValid = emailField === 'hidden' || isValidEmail(trimmedEmail)
-    const passwordValid = isValidPassword(password)
+    const passwordValid = passwordPolicy.isValid(password)
     const canSubmit = usernameValid && emailValid && passwordValid
 
     const showUsernameError = username.length > 0 && !usernameValid
@@ -87,7 +89,8 @@ function CreateUserDialog({
             <PasswordField
                 value={password}
                 onChange={setPassword}
-                hint="20-64 characters, with at least one uppercase letter, one digit and one special character."
+                hint={passwordPolicy.hint}
+                generatedLength={passwordPolicy.generatedLength}
             />
             {password.length > 0 && !passwordValid && (
                 <p className="dialog-error" role="alert">This password does not meet the requirements above.</p>

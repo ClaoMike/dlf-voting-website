@@ -3,7 +3,7 @@ import CreateUserDialog from '../../../components/CreateUserDialog'
 import EditUserDialog from '../../../components/EditUserDialog'
 import PasswordRevealDialog from '../../../components/PasswordRevealDialog/PasswordRevealDialog'
 import { useAdminAuth } from '../../../context/useAdminAuth'
-import { ADMIN_USERNAME_MAX_LENGTH } from '../../../utils/validation'
+import { ADMIN_PASSWORD_POLICY, ADMIN_USERNAME_MAX_LENGTH } from '../../../utils/validation'
 import AdministratorsTable from './AdministratorsTable'
 import { useAdministratorsData } from './useAdministratorsData'
 import { useAdministratorActions } from './useAdministratorActions'
@@ -52,6 +52,7 @@ function AdminAdministrators() {
                     submitLabel="Create administrator"
                     usernameMaxLength={ADMIN_USERNAME_MAX_LENGTH}
                     emailField="required"
+                    passwordPolicy={ADMIN_PASSWORD_POLICY}
                     onCreate={actions.create}
                     onCancel={actions.cancelCreate}
                     error={actions.createError}
@@ -65,6 +66,7 @@ function AdminAdministrators() {
                     initialEmail={null}
                     usernameMaxLength={ADMIN_USERNAME_MAX_LENGTH}
                     emailField="keep-if-blank"
+                    passwordPolicy={ADMIN_PASSWORD_POLICY}
                     onSave={actions.saveEdit}
                     onCancel={actions.cancelEdit}
                     error={actions.editError}

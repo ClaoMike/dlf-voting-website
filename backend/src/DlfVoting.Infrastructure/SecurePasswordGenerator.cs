@@ -10,7 +10,10 @@ public static class SecurePasswordGenerator
     private const string Special = "!@#$%^&*_-+=?";
     private const string All = Uppercase + Lowercase + Digits + Special;
 
-    public static string Generate(int length = 24)
+    // Passwords handed out to voters (imports and the admin "Generate" button); mirrored in frontend/src/utils/passwordGenerator.ts.
+    public const int UserPasswordLength = 8;
+
+    public static string Generate(int length = UserPasswordLength)
     {
         var required = new[]
         {

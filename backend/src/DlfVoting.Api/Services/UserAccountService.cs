@@ -100,8 +100,8 @@ public class UserAccountService
         if (email is not null && !IdentityRules.IsValidEmail(email))
             return OperationResult.Invalid(IdentityRules.InvalidEmailMessage);
 
-        if ((passwordRequired || !string.IsNullOrEmpty(password)) && !IdentityRules.IsValidPassword(password))
-            return OperationResult.Invalid(IdentityRules.InvalidPasswordMessage);
+        if ((passwordRequired || !string.IsNullOrEmpty(password)) && !IdentityRules.IsValidUserPassword(password))
+            return OperationResult.Invalid(IdentityRules.InvalidUserPasswordMessage);
 
         return null;
     }
