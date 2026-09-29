@@ -57,4 +57,4 @@ Migrations are applied automatically to the test database on the first test run 
 
 ## Known gaps / TODO
 
-- Frontend is intentionally not under automated test coverage yet (internal tool, tight deadline, UI still evolving). Revisit once the actual voting flow (ballot, submission, results) is built — that's the part where a UI bug would have real impact.
+- Frontend tests (Vitest + Testing Library, `npm test` in `frontend/`) only cover generated user passwords so far. The rest of the frontend is intentionally not under automated test coverage yet (internal tool, tight deadline, UI still evolving). Revisit once the actual voting flow (ballot, submission, results) is built — that's the part where a UI bug would have real impact.

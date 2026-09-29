@@ -54,6 +54,7 @@ jobs:
       - run: npm ci
       # Type check and production build. (Lint isn't enforced yet: it has pre-existing errors to clear first.)
       - run: npm run build
+      - run: npm test
 
   publish:
     needs: [backend-tests, frontend]
