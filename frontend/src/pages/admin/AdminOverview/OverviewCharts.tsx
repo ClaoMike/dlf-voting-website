@@ -29,8 +29,10 @@ function OverviewCharts({ stats }: OverviewChartsProps) {
                 />
                 <figcaption>Turnout</figcaption>
             </figure>
-            <figure className="overview-chart">
-                <VoteBarChart data={stats.optionCounts.map((o) => ({ name: o.votingOptionName, count: o.count }))} />
+            <figure className="overview-chart overview-chart-bars">
+                <VoteBarChart
+                    data={stats.optionCounts.map((o) => ({ id: o.votingOptionId, name: o.votingOptionName, count: o.count }))}
+                />
                 <figcaption>Votes per option</figcaption>
             </figure>
         </div>

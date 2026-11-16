@@ -51,6 +51,7 @@ public class AuthorizationMatrixTests : IntegrationTestBase
         { "PUT", "/api/administrators/me/password" },
         { "GET", "/api/votes" },
         { "GET", "/api/votes/stats" },
+        { "GET", "/api/votes/report" },
         { "DELETE", $"/api/votes/{Guid.NewGuid()}" },
         { "PUT", "/api/settings/voting" },
     };

@@ -43,6 +43,14 @@
     margin: 0;
 }
 
+.overview-chart-bars {
+    /* Takes the room that is left (a full row of its own on phones). min-width: 0 lets it be narrower than the
+       chart inside it, so a wide chart scrolls inside the card instead of making the whole page scroll sideways. */
+    flex: 1 1 320px;
+    min-width: 0;
+    max-width: 100%;
+}
+
 .overview-chart figcaption {
     font-size: 0.85rem;
     font-weight: 600;
@@ -53,4 +61,181 @@
         width: 120px;
         height: 120px;
     }
+}
+
+/* "Results so far" with the Print button beside it (below it on narrow screens). */
+.overview-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.overview-card-header > h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+/* --- Print results dialog --- */
+
+.print-results-options {
+    margin: 0 0 1.25rem;
+    padding: 0;
+    border: none;
+    text-align: left;
+}
+
+.print-results-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    color: var(--text-h);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.print-results-option input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--accent-strong);
+    cursor: pointer;
+}
+
+/* --- The printed report: hidden on screen; when printing, it is the only thing shown. --- */
+
+.print-report {
+    display: none;
+}
+
+@media print {
+    body > :not(.print-report) {
+        display: none !important;
+    }
+
+    .print-report {
+        display: block;
+        color: #000;
+        font-size: 11pt;
+        line-height: 1.4;
+    }
+
+    @page {
+        margin: 15mm;
+    }
+}
+
+.print-report-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #00a650;
+}
+
+.print-report-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.print-report-logo {
+    /* The logo is a wide wordmark, so it is sized by its height. */
+    width: auto;
+    height: 36px;
+}
+
+.print-report-header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 18pt;
+}
+
+.print-report-header p {
+    margin: 0;
+    color: #444;
+}
+
+.print-report section {
+    margin-bottom: 1.5rem;
+}
+
+.print-report h2 {
+    margin: 0 0 0.5rem;
+    font-size: 13pt;
+    break-after: avoid;
+}
+
+.print-report-footer {
+    margin-top: 2rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid #ccc;
+    color: #555;
+    font-size: 8pt;
+    break-inside: avoid;
+}
+
+.print-report-summary {
+    display: flex;
+    gap: 3rem;
+}
+
+.print-report-figure {
+    margin: 0;
+    font-size: 20pt;
+    font-weight: 700;
+}
+
+.print-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.print-report-table th,
+.print-report-table td {
+    padding: 4pt 6pt;
+    border-bottom: 1px solid #ccc;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+}
+
+.print-report-table thead th {
+    border-bottom: 2px solid #000;
+}
+
+.print-report-table thead {
+    /* Repeat the column names on every page of a long list. */
+    display: table-header-group;
+}
+
+.print-report-table tr {
+    break-inside: avoid;
+}
+
+.print-report-table tfoot th,
+.print-report-table tfoot td {
+    border-top: 2px solid #000;
+    border-bottom: none;
+    font-weight: 700;
+}
+
+.print-report-number {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.print-report-bar-cell {
+    width: 30%;
+}
+
+.print-report-bar {
+    display: block;
+    height: 10pt;
+    min-width: 1px;
+    background-color: #00a650;
+    /* Printers drop background colours by default; the bar is part of the content here. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
 }

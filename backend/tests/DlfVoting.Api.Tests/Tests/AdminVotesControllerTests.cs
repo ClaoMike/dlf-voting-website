@@ -380,4 +380,182 @@ public class AdminVotesControllerTests : IntegrationTestBase
         Assert.Equal(defaultBody!.TotalCount, explicitBody!.TotalCount);
     }
 
+    // --- Report ---
+
+    private record OptionVoteCountDto(Guid VotingOptionId, string VotingOptionName, int Count);
+    private record ReportUserDto(string? Name, string Username, string? EmployeeCode, string? CompanyCode);
+    private record VoteReportDto(
+        DateTime GeneratedAt,
+        string GeneratedBy,
+        bool IsVotingOpen,
+        int TotalUsers,
+        int VotedUsers,
+        List<OptionVoteCountDto> OptionCounts,
+        List<ReportUserDto> UsersWhoVoted,
+        List<ReportUserDto> UsersWhoDidNotVote);
+
+    [Fact]
+    public async Task GetReport_WithoutAuth_ReturnsUnauthorized()
+    {
+        var response = await Factory.CreateClient().GetAsync("/api/votes/report");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetReport_WithUserAuth_ReturnsUnauthorized()
+    {
+        var userClient = await CreateAuthenticatedUserClientAsync();
+        var response = await userClient.GetAsync("/api/votes/report");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetReport_ReturnsTotalsCountsAndWhoDidAndDidNotVote()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionA = await CreateVotingOptionAsync(adminClient, "Report Option A");
+        var optionB = await CreateVotingOptionAsync(adminClient, "Report Option B");
+        await CreateVotingOptionAsync(adminClient, "Report Option Unpicked");
+
+        var (_, voter1) = await CreateAndLoginUserAsync("report-voter-1", "SomeValidPassword1!@#");
+        var (_, voter2) = await CreateAndLoginUserAsync("report-voter-2", "SomeValidPassword2!@#");
+        var (_, voter3) = await CreateAndLoginUserAsync("report-voter-3", "SomeValidPassword3!@#");
+        await CreateAndLoginUserAsync("report-nonvoter", "SomeValidPassword4!@#");
+        await voter1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
+        await voter2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
+        await voter3.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
+
+        var response = await adminClient.GetAsync("/api/votes/report");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var report = (await response.Content.ReadFromJsonAsync<VoteReportDto>())!;
+
+        // 4 created + the seeded test user, who never votes.
+        Assert.Equal(5, report.TotalUsers);
+        Assert.Equal(3, report.VotedUsers);
+        Assert.True(report.IsVotingOpen);
+        Assert.Equal(
+            [("Report Option A", 2), ("Report Option B", 1), ("Report Option Unpicked", 0)],
+            report.OptionCounts.Select(o => (o.VotingOptionName, o.Count)).ToList());
+        Assert.Equal(["report-voter-1", "report-voter-2", "report-voter-3"], report.UsersWhoVoted.Select(u => u.Username).Order());
+        Assert.Equal(["report-nonvoter", UserUsername], report.UsersWhoDidNotVote.Select(u => u.Username).Order());
+    }
+
+    [Fact]
+    public async Task GetReport_ListsNamesAndEmployeeData_SortedByName()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+            db.Users.Add(new User
+            {
+                Id = Guid.NewGuid(), Username = "report-oe", FirstName = "Øjvind", LastName = "Berg", EmployeeCode = "00042",
+                CompanyCode = "DLF1", PasswordHash = "not-used", CreatedAt = DateTime.UtcNow
+            });
+            db.Users.Add(new User
+            {
+                Id = Guid.NewGuid(), Username = "report-bo", FirstName = "Bo", LastName = "Holm", PasswordHash = "not-used",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var report = (await adminClient.GetFromJsonAsync<VoteReportDto>("/api/votes/report"))!;
+
+        Assert.Equal(
+            [
+                new ReportUserDto("Bo Holm", "report-bo", null, null),
+                new ReportUserDto("Øjvind Berg", "report-oe", "00042", "DLF1"),
+                new ReportUserDto(null, UserUsername, null, null),
+            ],
+            report.UsersWhoDidNotVote);
+    }
+
+    [Fact]
+    public async Task GetReport_SaysWhichAdminGeneratedItAndWhen()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var before = DateTime.UtcNow.AddSeconds(-5);
+
+        var report = (await adminClient.GetFromJsonAsync<VoteReportDto>("/api/votes/report"))!;
+
+        Assert.Equal(AdminEmail, report.GeneratedBy);
+        Assert.InRange(report.GeneratedAt.ToUniversalTime(), before, DateTime.UtcNow.AddSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetReport_ShowsTheAdminsCurrentUsername_AfterARename()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+            var admin = await db.Administrators.SingleAsync(a => a.Username == AdminEmail);
+            admin.Username = "renamed-admin";
+            await db.SaveChangesAsync();
+        }
+
+        // The session only checks that the admin still exists, so it survives the rename; its cookie still carries the
+        // old name, but the report prints the current one.
+        var report = (await adminClient.GetFromJsonAsync<VoteReportDto>("/api/votes/report"))!;
+
+        Assert.Equal("renamed-admin", report.GeneratedBy);
+    }
+
+    [Fact]
+    public async Task GetReport_ShowsWhenVotingIsClosed()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        (await adminClient.PutAsJsonAsync("/api/settings/voting", new { isVotingOpen = false })).EnsureSuccessStatusCode();
+
+        var report = (await adminClient.GetFromJsonAsync<VoteReportDto>("/api/votes/report"))!;
+
+        Assert.False(report.IsVotingOpen);
+    }
+
+    [Fact]
+    public async Task GetReport_NeverRevealsWhatAnIndividualVotedFor()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionId = await CreateVotingOptionAsync(adminClient, "Secret Ballot Option");
+        var (userId, voter) = await CreateAndLoginUserAsync("secret-voter", "SomeValidPassword1!@#");
+        await voter.PostAsJsonAsync("/api/votes", new { votingOptionId = optionId });
+
+        var json = await adminClient.GetStringAsync("/api/votes/report");
+
+        // The option appears once (in the totals); no user ids, vote ids or per-user option ids are sent.
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(json, optionId.ToString()));
+        Assert.DoesNotContain(userId.ToString(), json);
+        Assert.DoesNotContain("userId", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetReport_DoesNotChangeAnyVote()
+    {
+        var adminClient = await CreateAuthenticatedClientAsync();
+        var optionA = await CreateVotingOptionAsync(adminClient, "Unchanged A");
+        var optionB = await CreateVotingOptionAsync(adminClient, "Unchanged B");
+        var (_, voter1) = await CreateAndLoginUserAsync("unchanged-1", "SomeValidPassword1!@#");
+        var (_, voter2) = await CreateAndLoginUserAsync("unchanged-2", "SomeValidPassword2!@#");
+        await voter1.PostAsJsonAsync("/api/votes", new { votingOptionId = optionA });
+        await voter2.PostAsJsonAsync("/api/votes", new { votingOptionId = optionB });
+
+        var before = await SnapshotVotesAsync();
+        for (var i = 0; i < 3; i++)
+        {
+            (await adminClient.GetAsync("/api/votes/report")).EnsureSuccessStatusCode();
+        }
+        var after = await SnapshotVotesAsync();
+
+        Assert.Equal(before, after);
+        Assert.Equal(2, after.Count);
+    }
+
+    private async Task<List<(Guid Id, Guid UserId, Guid VotingOptionId, DateTime UpdatedAt)>> SnapshotVotesAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DlfVotingDbContext>();
+        var votes = await db.Votes.AsNoTracking().OrderBy(v => v.Id).ToListAsync();
+        return votes.Select(v => (v.Id, v.UserId, v.VotingOptionId, v.UpdatedAt)).ToList();
+    }
 }

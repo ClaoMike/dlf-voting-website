@@ -1,30 +1,36 @@
+/* The scroll box: never wider than its card; with many options the chart scrolls sideways in here. */
 .vote-bar-chart {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 0.25rem;
+}
+
+/* Row 1: the bars. Row 2: their labels. Columns have a fixed width so every bar sits in the same slot. */
+.vote-bar-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--bar-columns, 1), 96px);
+    grid-template-rows: auto auto;
+    width: max-content;
+    /* Centred while it fits; once it overflows, it starts at the left edge so nothing is cut off. */
+    margin: 0 auto;
+}
+
+/* The plot area of one bar. Every one has the same height and its bar grows up from the bottom edge, so all bars
+   start on one line (the x-axis, drawn as the bottom border). The top padding leaves room for the tallest bar's count. */
+.vote-bar-plot {
     display: flex;
     align-items: flex-end;
-    gap: 1.5rem;
-    max-width: 100%;
-    height: 220px;
-    padding: 1rem 0.5rem 0;
-    overflow-x: auto;
-}
-
-.vote-bar-column {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    min-width: 60px;
-}
-
-.vote-bar-count {
-    margin-bottom: 0.35rem;
-    color: var(--text-h);
-    font-weight: 600;
-    font-size: 0.85rem;
+    justify-content: center;
+    box-sizing: content-box;
+    height: 160px;
+    padding-top: 1.5rem;
+    border-bottom: 2px solid var(--border-strong);
 }
 
 .vote-bar {
+    position: relative;
     width: 36px;
     min-height: 2px;
     background-color: var(--accent);
@@ -32,10 +38,32 @@
     transition: height 0.4s ease;
 }
 
+/* Sits just above its bar, whatever the bar's height. */
+.vote-bar-count {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.25rem;
+    color: var(--text-h);
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
 .vote-bar-label {
-    margin-top: 0.5rem;
+    padding: 0.5rem 0.25rem 0;
+    color: var(--text-h);
     font-size: 0.8rem;
+    line-height: 1.3;
     text-align: center;
-    max-width: 90px;
-    overflow-wrap: break-word;
+    /* Long names wrap within their column instead of widening it or overlapping the next one. */
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vote-bar {
+        transition: none;
+    }
 }

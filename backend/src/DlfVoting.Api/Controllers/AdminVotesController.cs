@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using DlfVoting.Api.Common;
 using DlfVoting.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,15 @@ public class AdminVotesController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats() =>
         Ok(await _reports.GetStatsAsync());
+
+    /// <summary>The printable results report (read-only; see <see cref="VoteReportService.GetReportAsync"/>).</summary>
+    [HttpGet("report")]
+    public async Task<IActionResult> GetReport()
+    {
+        // Looked up by id, so the report shows the admin's current username even if they renamed themselves mid-session.
+        var adminId = Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : Guid.Empty;
+        return Ok(await _reports.GetReportAsync(adminId, User.FindFirstValue(ClaimTypes.Name) ?? "unknown"));
+    }
 
     /// <summary>Resets a user's vote (deletes it), so they can vote again while voting is open.</summary>
     [HttpDelete("{userId:guid}")]

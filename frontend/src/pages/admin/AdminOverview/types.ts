@@ -26,3 +26,24 @@ export type VoteStats = {
 }
 
 export type Tab = 'all' | 'voted'
+
+export type ReportUser = {
+    name: string | null
+    username: string
+    employeeCode: string | null
+    companyCode: string | null
+}
+
+export type VoteReport = {
+    generatedAt: string
+    generatedBy: string
+    isVotingOpen: boolean
+    totalUsers: number
+    votedUsers: number
+    optionCounts: OptionVoteCount[]
+    usersWhoVoted: ReportUser[]
+    usersWhoDidNotVote: ReportUser[]
+}
+
+/** The parts of the printed report the admin can switch on and off. */
+export type ReportSection = 'votedCount' | 'turnout' | 'optionCounts' | 'votersList' | 'nonVotersList'

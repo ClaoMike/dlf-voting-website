@@ -1,9 +1,12 @@
 import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
 import OverviewCharts from './OverviewCharts'
 import OverviewTabs from './OverviewTabs'
+import PrintableReport from './PrintableReport'
+import PrintResultsDialog from './PrintResultsDialog'
 import VotesTable from './VotesTable'
 import { useVotesData } from './useVotesData'
 import { useVoteActions } from './useVoteActions'
+import { usePrintReport } from './usePrintReport'
 
 import '../AdminVotingOptions/AdminVotingOptions.css'
 import '../../../components/VoteBarChart/VoteBarChart.css'
@@ -12,6 +15,7 @@ import './AdminOverview.css'
 function AdminOverview() {
     const data = useVotesData()
     const actions = useVoteActions(data.refresh)
+    const printing = usePrintReport()
 
     return (
         <div className="voting-options-page">
@@ -19,7 +23,12 @@ function AdminOverview() {
 
             {data.stats && (
                 <section className="admin-card" aria-labelledby="overview-results">
-                    <h2 id="overview-results">Results so far</h2>
+                    <div className="overview-card-header">
+                        <h2 id="overview-results">Results so far</h2>
+                        <button className="admin-button" onClick={printing.open}>
+                            Print results
+                        </button>
+                    </div>
                     <OverviewCharts stats={data.stats} />
                 </section>
             )}
@@ -55,6 +64,17 @@ function AdminOverview() {
                     onCancel={actions.cancelReset}
                 />
             )}
+
+            {printing.isDialogOpen && (
+                <PrintResultsDialog
+                    isPreparing={printing.isPreparing}
+                    error={printing.error}
+                    onPrint={printing.print}
+                    onCancel={printing.cancel}
+                />
+            )}
+
+            {printing.job && <PrintableReport report={printing.job.report} sections={printing.job.sections} />}
         </div>
     )
 }
